@@ -75,7 +75,7 @@ export default function Header({ className = "" }: HeaderProps) {
             className="w-12 h-12 object-contain transition-opacity duration-200"
           />
         )}
-        甘味処 You-First屋
+        You-First
       </Link>
 
       <nav className="flex gap-4 ml-auto mr-6">
@@ -120,7 +120,7 @@ export default function Header({ className = "" }: HeaderProps) {
           >
             <SheetHeader className="pt-4 px-4">
               <SheetTitle className="text-center text-xl text-white">
-                Menu
+                メニュー
               </SheetTitle>
             </SheetHeader>
 
@@ -132,55 +132,55 @@ export default function Header({ className = "" }: HeaderProps) {
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                Work
+                施工実績
               </Link>
               <Link
                 href="/staffs"
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                Staffs
+                スタッフ
               </Link>
               <Link
                 href="/menu"
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                Price
+                ご案内
               </Link>
               <Link
                 href="/stores"
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                Access
+                アクセス
               </Link>
               <Link
                 href="/about"
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                Our Vision
+                当店の思い
               </Link>
               <Link
                 href="/news"
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                Notice
+                お知らせ
               </Link>
               <Link
                 href="mailto:you-first@ymail.ne.jp"
                 className="hover:underline text-white"
               >
-                Contact
+                ご連絡
               </Link>
               <Link
                 href="/jobApp"
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                Careers
+                ご応募
               </Link>
             </div>
             {/* ▼ ログインだけ下に固定 */}
