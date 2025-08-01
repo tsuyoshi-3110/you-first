@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     siteName: "ユーファースト",
     images: [
       {
-        url: "https://youfirst-cleaning-services.com/ogp.jpg", // サービスイメージ（横長・推奨 1200x630px）
+        url: "https://youfirst-cleaning-services.com/logo.png", // ←ここをlogo.pngに
         width: 1200,
         height: 630,
       },
@@ -49,12 +49,12 @@ export default function RootLayout({
       <head>
         {/* ファビコン・ロゴ（ブラウザタブ用） */}
         <link rel="icon" href="/favicon.ico?v=2" />
-        {/* OGP画像事前読み込み（SEO観点で推奨） */}
+        {/* ロゴ画像事前読み込み */}
         <link
           rel="preload"
           as="image"
-          href="/ogp.jpg"
-          type="image/jpeg"
+          href="/logo.png"
+          type="image/png"
         />
         <meta name="theme-color" content="#ffffff" />
 
@@ -65,7 +65,7 @@ export default function RootLayout({
         <meta property="og:url" content="https://youfirst-cleaning-services.com/" />
         <meta property="og:site_name" content="ユーファースト" />
         <meta property="og:locale" content="ja_JP" />
-        <meta property="og:image" content="https://youfirst-cleaning-services.com/ogp.jpg" />
+        <meta property="og:image" content="https://youfirst-cleaning-services.com/logo.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
@@ -73,7 +73,7 @@ export default function RootLayout({
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="高崎市のハウスクリーニング｜ユーファースト" />
         <meta name="twitter:description" content="高崎市密着のハウスクリーニング専門店『ユーファースト』。" />
-        <meta name="twitter:image" content="https://youfirst-cleaning-services.com/ogp.jpg" />
+        <meta name="twitter:image" content="https://youfirst-cleaning-services.com/logo.png" />
       </head>
 
       <body className="relative min-h-screen bg-[#ffffff]">
@@ -101,7 +101,7 @@ export default function RootLayout({
             },
             telephone: "（※電話番号）",
             url: "https://youfirst-cleaning-services.com/",
-            image: "https://youfirst-cleaning-services.com/ogp.jpg",
+            image: "https://youfirst-cleaning-services.com/logo.png",
             areaServed: "高崎市",
             openingHours: "Mo-Su 09:00-18:00", // 営業時間例
             priceRange: "¥¥",
