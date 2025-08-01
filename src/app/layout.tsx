@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     siteName: "ユーファースト",
     images: [
       {
-        url: "/ogp.jpg", // サイト用のOGP画像（なければ適宜変更）
+        url: "https://youfirst-cleaning-services.com/ogp.jpg", // サービスイメージ（横長・推奨 1200x630px）
         width: 1200,
         height: 630,
       },
@@ -41,21 +41,39 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const siteKey = "youFirst";
-
   return (
     <html
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <head>
+        {/* ファビコン・ロゴ（ブラウザタブ用） */}
+        <link rel="icon" href="/favicon.ico?v=2" />
+        {/* OGP画像事前読み込み（SEO観点で推奨） */}
         <link
           rel="preload"
           as="image"
-          href="/logo.png" // 清掃イメージ画像があればここを変更
-          type="image/webp"
+          href="/ogp.jpg"
+          type="image/jpeg"
         />
         <meta name="theme-color" content="#ffffff" />
-        <link rel="icon" href="/favicon.ico?v=2" />
+
+        {/* OGPタグ（SNSカード） */}
+        <meta property="og:title" content="高崎市のハウスクリーニング｜ユーファースト" />
+        <meta property="og:description" content="高崎市密着のハウスクリーニング専門店『ユーファースト』。安心のご夫婦経営で、丁寧・誠実な清掃サービスをご提供。お部屋や水回り、引越し前後の掃除も対応！" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://youfirst-cleaning-services.com/" />
+        <meta property="og:site_name" content="ユーファースト" />
+        <meta property="og:locale" content="ja_JP" />
+        <meta property="og:image" content="https://youfirst-cleaning-services.com/ogp.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+
+        {/* Twitter（X）カード */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="高崎市のハウスクリーニング｜ユーファースト" />
+        <meta name="twitter:description" content="高崎市密着のハウスクリーニング専門店『ユーファースト』。" />
+        <meta name="twitter:image" content="https://youfirst-cleaning-services.com/ogp.jpg" />
       </head>
 
       <body className="relative min-h-screen bg-[#ffffff]">
@@ -64,7 +82,7 @@ export default function RootLayout({
         <ThemeBackground />
         <Header />
         {children}
-
+        {/* 構造化データ（Google検索向け） */}
         <Script
           id="ld-json"
           type="application/ld+json"
