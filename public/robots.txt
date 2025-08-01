@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://youFirst.shop
+
+# Sitemaps
+Sitemap: https://youFirst.shop/sitemap.xml
