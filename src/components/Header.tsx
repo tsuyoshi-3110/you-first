@@ -180,7 +180,7 @@ export default function Header({ className = "" }: HeaderProps) {
                 onClick={() => setOpen(false)}
                 className="text-lg text-white"
               >
-                ご応募
+                求人／協力会社募集
               </Link>
             </div>
             {/* ▼ ログインだけ下に固定 */}
