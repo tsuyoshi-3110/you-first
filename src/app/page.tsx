@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title: "高崎市 ハウスクリーニング｜ユーファースト",
     description:
       "高崎市でハウスクリーニングなら『ユーファースト』。ご夫婦で丁寧にお掃除します。地域密着・見積もり無料！",
-    url: "https://youfirst-cleaning-services.com/",
+    url: "https://www.you-first.shop/",
     siteName: "ユーファースト",
     images: [
       {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     type: "website",
   },
-  alternates: { canonical: "https://youfirst-cleaning-services.com/" },
+  alternates: { canonical: "https://www.you-first.shop/" },
 };
 
 export default function HomePage() {
@@ -42,12 +42,14 @@ export default function HomePage() {
 
         {/* ページタイトルとリード文 */}
         <h1 className="text-3xl text-white lg:text-4xl font-extrabold text-center leading-tight mb-6">
-          高崎市 ハウスクリーニング<br />
+          高崎市 ハウスクリーニング
+          <br />
           ユーファースト
         </h1>
 
         <p className="max-w-3xl text-white mx-auto text-center leading-relaxed">
-          ユーファーストは、<b>高崎市密着</b>・<b>夫婦で営む</b>安心のハウスクリーニング専門店です。
+          ユーファーストは、<b>高崎市密着</b>・<b>夫婦で営む</b>
+          安心のハウスクリーニング専門店です。
           <br />
           お部屋、水回り、引越し前後の清掃もプロにお任せください。
           <br />
@@ -71,8 +73,8 @@ export default function HomePage() {
               // streetAddress, postalCodeなど必要に応じて追加
             },
             telephone: "（電話番号を記載）",
-            url: "https://youfirst-cleaning-services.com/",
-            image: "https://youfirst-cleaning-services.com/ogp-home.jpg",
+            url: "https://www.you-first.shop/",
+            image: "https://www.you-first.shop/ogp-home.jpg",
             areaServed: "高崎市",
             openingHours: "Mo-Su 09:00-18:00", // 実際の営業時間に合わせて編集
             priceRange: "¥¥",
