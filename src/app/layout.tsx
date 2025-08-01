@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.you-first.shop/ogp.jpg", // 横1200x630のjpgファイル（JPEG形式に注意！）
+        url: "https://www.you-first.shop/ogpLogo.jpg", // 横1200x630のjpgファイル（JPEG形式に注意！）
         width: 1200,
         height: 630,
         alt: "ユーファースト OGP画像",
@@ -68,24 +68,42 @@ export default function RootLayout({
         {/* ファビコン */}
         <link rel="icon" href="/favicon.ico?v=2" />
         {/* OGP画像事前読み込み */}
-        <link rel="preload" as="image" href="/ogp.jpg" type="image/jpeg" />
+        <link rel="preload" as="image" href="/ogpLogo.jpg" type="image/jpeg" />
         <meta name="theme-color" content="#ffffff" />
 
         {/* OGP & Twitterカード */}
-        <meta property="og:title" content="高崎市のハウスクリーニング｜ユーファースト" />
-        <meta property="og:description" content="高崎市密着のハウスクリーニング専門店『ユーファースト』。安心のご夫婦経営で、丁寧・誠実な清掃サービスをご提供。お部屋や水回り、引越し前後の掃除も対応！" />
+        <meta
+          property="og:title"
+          content="高崎市のハウスクリーニング｜ユーファースト"
+        />
+        <meta
+          property="og:description"
+          content="高崎市密着のハウスクリーニング専門店『ユーファースト』。安心のご夫婦経営で、丁寧・誠実な清掃サービスをご提供。お部屋や水回り、引越し前後の掃除も対応！"
+        />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.you-first.shop/" />
         <meta property="og:site_name" content="ユーファースト" />
         <meta property="og:locale" content="ja_JP" />
-        <meta property="og:image" content="https://www.you-first.shop/ogp.jpg" />
+        <meta
+          property="og:image"
+          content="https://www.you-first.shop/ogpLogo.jpg"
+        />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="高崎市のハウスクリーニング｜ユーファースト" />
-        <meta name="twitter:description" content="高崎市密着のハウスクリーニング専門店『ユーファースト』。" />
-        <meta name="twitter:image" content="https://www.you-first.shop/ogp.jpg" />
+        <meta
+          name="twitter:title"
+          content="高崎市のハウスクリーニング｜ユーファースト"
+        />
+        <meta
+          name="twitter:description"
+          content="高崎市密着のハウスクリーニング専門店『ユーファースト』。"
+        />
+        <meta
+          name="twitter:image"
+          content="https://www.you-first.shop/ogpLogo.jpg"
+        />
       </head>
       <body className="relative min-h-screen bg-[#ffffff]">
         <SubscriptionOverlay siteKey={siteKey} />
@@ -109,9 +127,9 @@ export default function RootLayout({
               addressLocality: "群馬県高崎市",
               streetAddress: "（※具体的な住所があれば記載）",
             },
-            telephone: "（※電話番号）",
+            telephone: "090-8330-1729",
             url: "https://www.you-first.shop/",
-            image: "https://www.you-first.shop/ogp.jpg",
+            image: "https://www.you-first.shop/ogpLogo.jpg",
             areaServed: "高崎市",
             openingHours: "Mo-Su 09:00-18:00",
             priceRange: "¥¥",
