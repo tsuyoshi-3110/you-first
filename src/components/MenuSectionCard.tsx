@@ -18,12 +18,12 @@ export default function MenuSectionCard({
   section,
   onTitleUpdate,
   isLoggedIn,
-   onDeleteSection,
+  onDeleteSection,
 }: {
   section: any;
   onTitleUpdate: (newTitle: string) => void;
   isLoggedIn: boolean;
-   onDeleteSection: () => void;
+  onDeleteSection: () => void;
 }) {
   const [items, setItems] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -50,7 +50,7 @@ export default function MenuSectionCard({
   const handleDelete = async () => {
     if (confirm("このセクションを削除しますか？")) {
       await deleteDoc(doc(db, "menuSections", section.id));
-       onDeleteSection();
+      onDeleteSection();
     }
   };
 
@@ -70,7 +70,7 @@ export default function MenuSectionCard({
   };
 
   const handleAddItem = async () => {
-    if (!newName.trim() ) {
+    if (!newName.trim()) {
       alert("名前は必須です");
       return;
     }
@@ -184,11 +184,12 @@ export default function MenuSectionCard({
               onChange={(e) => setNewName(e.target.value)}
               className="mb-2"
             />
-            <Input
+            <textarea
               placeholder="説明（任意）"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              className="mb-2"
+              rows={4}
+              className="w-full border px-3 py-2 rounded mb-2"
             />
             <Input
               placeholder="価格（例：5500）(任意)"
