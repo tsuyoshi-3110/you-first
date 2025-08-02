@@ -25,7 +25,7 @@ type HeaderProps = {
 const SNS = [
   {
     name: "Instagram",
-    href: "https://www.instagram.com/youFirst.crape/",
+    href: "https://www.instagram.com/you.first1009/profilecard/?igsh=MTJseG0xbG1nd3ZnOA%3D%3D",
     icon: Instagram,
   },
 ];
