@@ -1,3 +1,7 @@
+import { ThemeKey, THEMES } from "@/lib/themes";
+import { useThemeGradient } from "@/lib/useThemeGradient";
+import clsx from "clsx";
+import { useMemo } from "react";
 import {
   SwipeableList,
   SwipeableListItem,
@@ -15,6 +19,14 @@ export default function MenuItemCard({
   onDelete: () => void;
   isLoggedIn: boolean;
 }) {
+  const gradient = useThemeGradient();
+
+  const isDark = useMemo(() => {
+    const darkThemes: ThemeKey[] = ["brandG", "brandH", "brandI"];
+    if (!gradient) return false;
+    return darkThemes.some((key) => gradient === THEMES[key]);
+  }, [gradient]);
+
   const trailingActions = () => (
     <TrailingActions>
       <SwipeAction onClick={onDelete}>
@@ -30,7 +42,7 @@ export default function MenuItemCard({
       <SwipeableListItem trailingActions={isLoggedIn && trailingActions()}>
         <div className="flex justify-between items-center py-3 border-b px-2 rounded">
           <div>
-            <p className="font-medium">
+            <p className={clsx("font-medium", isDark && "text-white")}>
               {item.name}
               {/* 価格が0または未入力なら表示しない */}
               {item.price
@@ -42,7 +54,14 @@ export default function MenuItemCard({
                 : ""}
             </p>
             {item.description && (
-              <p className="text-sm text-gray-500">{item.description}</p>
+              <p
+                className={clsx(
+                  "whitespace-pre-wrap text-sm text-gray-500",
+                  isDark && "text-white"
+                )}
+              >
+                {item.description}
+              </p>
             )}
           </div>
         </div>

@@ -48,6 +48,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { writeBatch } from "firebase/firestore";
+import { motion } from "framer-motion";
+
 
 const SITE_KEY = "youFirst";
 const STORE_COL = `siteStores/${SITE_KEY}/items`;
@@ -638,6 +640,9 @@ export default function StoresClient() {
   );
 }
 
+
+
+
 function SortableStoreItem({
   store,
   children,
@@ -664,8 +669,16 @@ function SortableStoreItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <motion.div
+      ref={setNodeRef}
+      style={style}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      viewport={{ once: true, amount: 0.2 }}
+    >
       {children({ attributes, listeners, isDragging })}
-    </div>
+    </motion.div>
   );
 }
+
