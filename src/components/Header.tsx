@@ -173,7 +173,7 @@ export default function Header({ className = "" }: HeaderProps) {
                 href="mailto:you-first@ymail.ne.jp"
                 className="hover:underline text-white"
               >
-                ご連絡
+                メール問い合わせ
               </Link>
               <Link
                 href="/jobApp"
