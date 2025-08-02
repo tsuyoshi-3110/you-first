@@ -104,6 +104,7 @@ export default function RootLayout({
           name="twitter:image"
           content="https://www.you-first.shop/ogpLogo.jpg"
         />
+        <meta name="google-site-verification" content="8AZTfHNLIjKekUhRgfB1ZiWOh-gy5BxDrIhvSWocU10" />
       </head>
       <body className="relative min-h-screen bg-[#ffffff]">
         <SubscriptionOverlay siteKey={siteKey} />
