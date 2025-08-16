@@ -33,12 +33,12 @@ export const metadata: Metadata = {
     title: "高崎市のハウスクリーニング｜ユーファースト",
     description:
       "高崎市密着のハウスクリーニング専門店『ユーファースト』。安心のご夫婦経営で、丁寧・誠実な清掃サービスをご提供。お部屋や水回り、引越し前後の掃除も対応！",
-    url: "https://www.you-first.shop",
+    url: "https://you-first.shop",
     siteName: "ユーファースト",
     type: "website",
     images: [
       {
-        url: "https://www.you-first.shop/ogpLogo.jpg", // 横1200x630のjpgファイル（JPEG形式に注意！）
+        url: "https://you-first.shop/ogpLogo.jpg", // 横1200x630のjpgファイル（JPEG形式に注意！）
         width: 1200,
         height: 630,
         alt: "ユーファースト OGP画像",
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     locale: "ja_JP",
   },
   alternates: {
-    canonical: "https://www.you-first.shop",
+    canonical: "https://you-first.shop",
   },
-  metadataBase: new URL("https://www.you-first.shop"),
+  metadataBase: new URL("https://you-first.shop"),
 };
 // --- ここまで ---
 
@@ -81,12 +81,12 @@ export default function RootLayout({
           content="高崎市密着のハウスクリーニング専門店『ユーファースト』。安心のご夫婦経営で、丁寧・誠実な清掃サービスをご提供。お部屋や水回り、引越し前後の掃除も対応！"
         />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.you-first.shop/" />
+        <meta property="og:url" content="https://you-first.shop/" />
         <meta property="og:site_name" content="ユーファースト" />
         <meta property="og:locale" content="ja_JP" />
         <meta
           property="og:image"
-          content="https://www.you-first.shop/ogpLogo.jpg"
+          content="https://you-first.shop/ogpLogo.jpg"
         />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -102,9 +102,12 @@ export default function RootLayout({
         />
         <meta
           name="twitter:image"
-          content="https://www.you-first.shop/ogpLogo.jpg"
+          content="https://you-first.shop/ogpLogo.jpg"
         />
-        <meta name="google-site-verification" content="8AZTfHNLIjKekUhRgfB1ZiWOh-gy5BxDrIhvSWocU10" />
+        <meta
+          name="google-site-verification"
+          content="8AZTfHNLIjKekUhRgfB1ZiWOh-gy5BxDrIhvSWocU10"
+        />
       </head>
       <body className="relative min-h-screen bg-[#ffffff]">
         <SubscriptionOverlay siteKey={siteKey} />
@@ -129,8 +132,8 @@ export default function RootLayout({
               streetAddress: "（※具体的な住所があれば記載）",
             },
             telephone: "090-8330-1729",
-            url: "https://www.you-first.shop/",
-            image: "https://www.you-first.shop/ogpLogo.jpg",
+            url: "https://you-first.shop/",
+            image: "https://you-first.shop/ogpLogo.jpg",
             areaServed: "高崎市",
             openingHours: "Mo-Su 09:00-18:00",
             priceRange: "¥¥",

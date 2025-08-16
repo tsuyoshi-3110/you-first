@@ -11,7 +11,7 @@ export const metadata: Metadata = {
       "施工実績・ビフォーアフター｜ユーファースト（高崎市 ハウスクリーニング）",
     description:
       "ユーファーストが手掛けた高崎市内のハウスクリーニング施工実績・ビフォーアフター事例。写真付きでプロの仕上がりを紹介。地域密着・ご夫婦で丁寧対応！",
-    url: "https://www.you-first.shop/products",
+    url: "https://you-first.shop/products",
     siteName: "ユーファースト",
     images: [
       {

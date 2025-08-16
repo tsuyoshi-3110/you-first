@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: "店舗・営業エリア｜ユーファースト（高崎市 ハウスクリーニング）",
     description:
       "高崎市内を中心に、ユーファーストがご自宅・オフィスのハウスクリーニングを承ります。地域密着、安心・丁寧な清掃サービス。",
-    url: "https://www.you-first.shop/stores",
+    url: "https://you-first.shop/stores",
     siteName: "ユーファースト",
     images: [
       {
