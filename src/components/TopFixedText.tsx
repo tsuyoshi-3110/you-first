@@ -6,8 +6,8 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
-const SITE_KEY = "youFirst";
 const docRef = doc(db, "sitePages", SITE_KEY, "pages", "topMessage");
 
 type Msg = { title: string; body: string };

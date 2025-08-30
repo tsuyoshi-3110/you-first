@@ -8,9 +8,9 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
-/* アプリ側で持っている siteKey に差し替えてください */
-const SITE_KEY = "youFirst";
+
 
 export default function ReplyForm({
   postId,

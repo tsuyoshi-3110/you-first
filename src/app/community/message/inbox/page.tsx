@@ -15,9 +15,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAtom } from "jotai";
 import { partnerSiteKeyAtom } from "@/lib/atoms/siteKeyAtom";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
 /* ───────── 自店舗 ID ───────── */
-const MY_SITE_KEY = "youFirst";
+
 const DUMMY_IMG = "/noImage.png";
 
 /* ---------- 型 ---------- */
@@ -36,7 +37,7 @@ export default function InboxPage() {
   /* ────────── メタ購読 ────────── */
   useEffect(() => {
     const q = query(
-      collection(db, `siteMessageMeta/${MY_SITE_KEY}/conversations`),
+      collection(db, `siteMessageMeta/${SITE_KEY}/conversations`),
       orderBy("updatedAt", "desc")
     );
 
@@ -108,6 +109,7 @@ export default function InboxPage() {
                     width={48}
                     height={48}
                     className="rounded-full object-cover"
+                    unoptimized 
                   />
 
                   {/* 相手名・最終メッセージ・未読バッジ */}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import Image from "next/image";
 import { Plus } from "lucide-react";
 import { v4 as uuid } from "uuid";
 import imageCompression from "browser-image-compression";
@@ -49,13 +48,34 @@ import {
 } from "@dnd-kit/sortable";
 import SortableItem from "./SortableItem";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 import { type Product } from "@/types/Product";
+import ProductMedia from "./ProductMedia";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
 type MediaType = "image" | "video";
-
-const SITE_KEY = "youFirst";
-const MAX_ITEMS = 30;
+const MAX_ITEMS = 20;
+const MAX_VIDEO_SEC = 60;
+/** MIME リスト（← as const を外す）*/
+const VIDEO_MIME_TYPES: string[] = [
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "video/ogg",
+  "video/x-m4v",
+  "video/x-msvideo",
+  "video/x-ms-wmv",
+  "video/mpeg",
+  "video/3gpp",
+  "video/3gpp2",
+];
+const IMAGE_MIME_TYPES: string[] = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
 
 export default function ProductsClient() {
   const [list, setList] = useState<Product[]>([]);
@@ -69,7 +89,7 @@ export default function ProductsClient() {
   // const [taxIncluded, setTaxIncluded] = useState(true); // デフォルト税込
   const [progress, setProgress] = useState<number | null>(null);
   const uploading = progress !== null;
-  const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
+
   const [aiLoading, setAiLoading] = useState(false);
   const [showKeywordInput, setShowKeywordInput] = useState(false);
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -108,21 +128,25 @@ export default function ProductsClient() {
 
   useEffect(() => onAuthStateChanged(auth, (u) => setIsAdmin(!!u)), []);
 
-  // 最大 30 件取得（リアルタイム）
   useEffect(() => {
     const q = query(colRef, orderBy("order"), limit(MAX_ITEMS));
-    const unsub = onSnapshot(q, (snap) => {
-      const docs = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+
+    /* ❶ ここで購読開始 ─ 最初のページはずっとリアルタイムで受信 */
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const docs = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
       })) as Product[];
 
       setList(docs);
-      setLastVisible(snap.docs[snap.docs.length - 1] ?? null);
+      setLastVisible(snap.docs.at(-1) ?? null);
       setHasMore(snap.docs.length === MAX_ITEMS);
+
+      /* ⭐ 解除はここでは呼ばない */
     });
 
-    return () => unsub();
+    /* ❷ コンポーネントが unmount されたときだけリスナーを外す */
+    return () => unsubscribe();
   }, [colRef]);
 
   const loadMore = useCallback(async () => {
@@ -133,7 +157,7 @@ export default function ProductsClient() {
     const q = query(
       colRef,
       orderBy("order"),
-      startAfter(lastVisible),
+      startAfter(lastVisible), // ← 前ページの末尾から続き
       limit(MAX_ITEMS)
     );
 
@@ -188,18 +212,11 @@ export default function ProductsClient() {
         const isVideo = file.type.startsWith("video/");
         mediaType = isVideo ? "video" : "image";
 
-        const isValidImage =
-          file.type === "image/jpeg" || file.type === "image/png";
-        const isValidVideo =
-          file.type === "video/mp4" || file.type === "video/quicktime";
+        const isValidVideo = VIDEO_MIME_TYPES.includes(file.type); // ✅広がった判定
+        const isValidImage = IMAGE_MIME_TYPES.includes(file.type);
 
         if (!isValidImage && !isValidVideo) {
           alert("対応形式：画像（JPEG, PNG）／動画（MP4, MOV）");
-          return;
-        }
-
-        if (isVideo && file.size > 50 * 1024 * 1024) {
-          alert("動画サイズは50MB未満にしてください");
           return;
         }
 
@@ -365,19 +382,20 @@ export default function ProductsClient() {
         >
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-2 items-stretch">
             {list.map((p) => {
-              const isLoaded = loadedIds.has(p.id);
               return (
                 <SortableItem key={p.id} product={p}>
                   {({ listeners, attributes, isDragging }) => (
-                    <div
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      transition={{ duration: 0.3 }}
                       onClick={() => {
-                        // 管理者編集中やドラッグ中は遷移させない
                         if (isDragging) return;
                         router.push(`/products/${p.id}`);
                       }}
                       className={clsx(
-                        // --- 既存 ---
-                        "flex flex-col h-full border rounded-lg overflow-hidden shadow relative transition-colors duration-200",
+                        "flex flex-col h-full border rounded-lg overflow-hidden shadow-xl relative transition-colors duration-200",
                         "bg-gradient-to-b",
                         gradient,
                         isDragging
@@ -385,11 +403,7 @@ export default function ProductsClient() {
                           : isDark
                           ? "bg-black/40 text-white"
                           : "bg-white",
-                        // --- ★ 追加ここだけ ★ ---
-                        // 管理者（ドラッグできる人）は常に grab カーソル。
-                        // それ以外の閲覧者には pointer カーソルを表示。
                         "cursor-pointer",
-                        // hover で軽く陰影を強調（任意）
                         !isDragging && "hover:shadow-lg"
                       )}
                     >
@@ -406,63 +420,15 @@ export default function ProductsClient() {
                         </div>
                       )}
 
-                      {!isLoaded && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10">
-                          <svg
-                            className="w-8 h-8 animate-spin text-pink-600"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                            />
-                          </svg>
-                        </div>
-                      )}
-
-                      {/* メディア表示 */}
-                      {p.mediaType === "image" ? (
-                        <div className="relative w-full aspect-[1/1] sm:aspect-square">
-                          <Image
-                            src={p.mediaURL}
-                            alt={p.title}
-                            fill
-                            className="object-cover"
-                            sizes="(min-width:1024px) 320px, (min-width:640px) 45vw, 90vw"
-                            onLoad={() =>
-                              setLoadedIds((prev) => new Set(prev).add(p.id))
-                            }
-                          />
-                        </div>
-                      ) : (
-                        <div className="relative w-full aspect-[1/1] sm:aspect-square">
-                          <video
-                            src={p.mediaURL}
-                            muted
-                            playsInline
-                            autoPlay
-                            loop
-                            preload="auto"
-                            className="w-full h-full object-cover absolute top-0 left-0"
-                            onLoadedData={() =>
-                              setLoadedIds((prev) => new Set(prev).add(p.id))
-                            }
-                          />
-                        </div>
-                      )}
+                      <ProductMedia
+                        src={p.mediaURL}
+                        type={p.mediaType}
+                        className="shadow-lg" /* 追加スタイルがあれば */
+                        /* autoPlay / loop / muted はデフォルト true。変更する場合だけ渡す */
+                      />
 
                       {/* 商品情報 */}
-                      <div className="p-1 space-y-1">
+                      <div className="p-3 space-y-2">
                         <h2
                           className={clsx("text-sm font-bold", {
                             "text-white": isDark,
@@ -471,7 +437,7 @@ export default function ProductsClient() {
                           {p.title}
                         </h2>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                 </SortableItem>
               );
@@ -618,11 +584,37 @@ export default function ProductsClient() {
                 </button>
               </>
             )}
-
+            <label>画像 / 動画 (60秒以内)</label>
             <input
               type="file"
-              accept="image/*,video/mp4"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              accept={[...IMAGE_MIME_TYPES, ...VIDEO_MIME_TYPES].join(",")}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+
+                /* --- 動画かどうか判定 --- */
+                const isVideo = f.type.startsWith("video/");
+                if (!isVideo) {
+                  setFile(f);
+                  return;
+                }
+
+                /* --- <video> でメタデータだけ読む --- */
+                const blobURL = URL.createObjectURL(f);
+                const vid = document.createElement("video");
+                vid.preload = "metadata";
+                vid.src = blobURL;
+
+                vid.onloadedmetadata = () => {
+                  URL.revokeObjectURL(blobURL); // もう不要
+                  if (vid.duration > MAX_VIDEO_SEC) {
+                    alert(`動画は ${MAX_VIDEO_SEC} 秒以内にしてください`);
+                    e.target.value = ""; // input をリセット
+                    return;
+                  }
+                  setFile(f); // 30 秒以内なら state へ
+                };
+              }}
               className="bg-gray-500 text-white w-full h-10 px-3 py-1 rounded"
               disabled={uploading}
             />

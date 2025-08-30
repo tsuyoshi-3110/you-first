@@ -11,6 +11,7 @@ import { Inbox } from "lucide-react";
 import clsx from "clsx";
 import { useThemeGradient } from "@/lib/useThemeGradient";
 import { ThemeKey, THEMES } from "@/lib/themes";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
 /* ---------- 型 ---------- */
 type SiteOwner = {
@@ -23,25 +24,21 @@ type SiteOwner = {
 };
 
 /* ---------- 定数 ---------- */
-const SELF_SITE_KEY = "youFirst"; // ← 自分の店舗 siteKey
 const DARK_KEYS: ThemeKey[] = ["brandG", "brandH", "brandI"];
 const collatorJa = new Intl.Collator("ja", { sensitivity: "base" });
 
 /* ----------  Component ---------- */
 export default function CommunityPage() {
-  /* ステート */
   const [owners, setOwners] = useState<SiteOwner[]>([]);
-  const [query, setQuery] = useState(""); // 🔍 検索クエリ
+  const [query, setQuery] = useState("");
   const gradient = useThemeGradient();
   const setPartnerSiteKey = useSetAtom(partnerSiteKeyAtom);
 
-  /* ダーク判定 */
   const isDark = useMemo(
     () => !!gradient && DARK_KEYS.some((k) => gradient === THEMES[k]),
     [gradient]
   );
 
-  /* ───────── 店舗一覧取得 & 五十音ソート ───────── */
   useEffect(() => {
     const fetchOwners = async () => {
       const snap = await getDocs(collection(db, "siteSettings"));
@@ -53,7 +50,6 @@ export default function CommunityPage() {
             doc(db, "siteSettingsEditable", siteKey)
           );
           const editableData = editableSnap.exists() ? editableSnap.data() : {};
-
           return {
             id: siteKey,
             siteName: data.siteName ?? "(無名の店舗)",
@@ -65,9 +61,8 @@ export default function CommunityPage() {
         })
       );
 
-      /* ❶ 自分を除外 → ❷ siteName 五十音順に並べ替え */
       const sorted = rows
-        .filter((r) => r.id !== SELF_SITE_KEY)
+        .filter((r) => r.id !== SITE_KEY)
         .sort((a, b) => collatorJa.compare(a.siteName, b.siteName));
 
       setOwners(sorted);
@@ -76,99 +71,105 @@ export default function CommunityPage() {
     fetchOwners();
   }, []);
 
-  /* ───────── 検索フィルタリング ───────── */
   const filteredOwners = useMemo(() => {
     if (!query.trim()) return owners;
     const q = query.trim().toLowerCase();
     return owners.filter((o) => o.siteName.toLowerCase().includes(q));
   }, [owners, query]);
 
-  /* 入力ハンドラをメモ化 */
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value),
     []
   );
 
-  /* ----------  UI ---------- */
-  return (
-    <main className="mx-auto max-w-3xl p-4 pt-20">
-      <h1 className="mb-6 text-center text-2xl font-bold text-white">
-        ショップ一覧
-      </h1>
+ return (
+  <main className="mx-auto max-w-3xl p-4 pt-20">
+    {/* 🔍 検索ボックス */}
+    <input
+      type="text"
+      placeholder="店舗名で検索…"
+      value={query}
+      onChange={handleChange}
+      className={clsx(
+        "mb-4 w-full bg-white/50 rounded border px-3 py-2 text-sm focus:outline-none",
+        isDark
+          ? "text-white placeholder-gray-300 border-gray-600"
+          : "text-black"
+      )}
+    />
 
-      {/* 🔍 検索ボックス */}
-      <input
-        type="text"
-        placeholder="店舗名で検索…"
-        value={query}
-        onChange={handleChange}
-        className={clsx(
-          "mb-4 w-full rounded border px-3 py-2 text-sm focus:outline-none",
-          isDark ? "text-white placeholder-gray-300 border-gray-600" : ""
-        )}
-      />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {filteredOwners.map((o) => (
-          <div
-            key={o.id}
-            className="flex items-center gap-4 rounded-lg border p-4 shadow transition hover:shadow-md"
-          >
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {filteredOwners.map((o) => (
+        <div
+          key={o.id}
+          className={clsx(
+            // アイコン | テキスト
+            "relative grid grid-cols-[auto_1fr] items-start gap-4",
+            "bg-white/50 rounded-lg border p-4 shadow transition hover:shadow-md",
+            "h-48"
+          )}
+        >
+          {/* 左: アイコン */}
+          <div className="relative h-16 w-16 shrink-0">
             <Image
               src={o.iconUrl}
               alt={o.ownerName}
-              width={60}
-              height={60}
-              className="rounded-full object-cover"
+              fill
+              className="object-contain"
+              unoptimized
+              sizes="64px"
             />
-
-            <div className="flex-1">
-              <p
-                className={clsx(
-                  "font-bold",
-                  isDark ? "text-white" : "text-black"
-                )}
-              >
-                {o.siteName}
-              </p>
-              <p
-                className={clsx(
-                  "text-sm",
-                  isDark ? "text-gray-200" : "text-gray-600"
-                )}
-              >
-                {o.ownerAddress}
-              </p>
-              <p
-                className={clsx(
-                  "text-sm",
-                  isDark ? "text-gray-300" : "text-gray-500"
-                )}
-              >
-                by&nbsp;{o.ownerName}
-              </p>
-            </div>
-
-            <Link
-              href={`/community/message/${o.id}`}
-              onClick={() => setPartnerSiteKey(o.id)}
-              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-            >
-              メッセージ
-            </Link>
           </div>
-        ))}
-      </div>
 
-      {/* 受信箱ボタン */}
-      <Link
-        href="/community/message/inbox"
-        aria-label="受信箱"
-        className="fixed bottom-4 left-10 z-40 flex h-12 w-12 items-center justify-center rounded-full
-                   bg-blue-600 text-white shadow-lg transition hover:bg-blue-700 focus:outline-none"
-      >
-        <Inbox className="h-6 w-6" />
-      </Link>
-    </main>
-  );
+          {/* 中: テキスト（右下ボタンと被らないように下余白を確保） */}
+          <div className="min-w-0 flex flex-col justify-start pb-12">
+            <p
+              className={clsx(
+                "font-bold truncate",
+                isDark ? "text-white" : "text-black"
+              )}
+              title={o.siteName}
+            >
+              {o.siteName}
+            </p>
+            <p
+              className={clsx(
+                "text-sm truncate",
+                isDark ? "text-gray-300" : "text-black"
+              )}
+              title={o.ownerName}
+            >
+              by&nbsp;{o.ownerName}
+            </p>
+          </div>
+
+          {/* 右下固定ボタン（カードの右下に絶対配置） */}
+          <Link
+            href={`/community/message/${o.id}`}
+            onClick={() => setPartnerSiteKey(o.id)}
+            className={clsx(
+              "absolute bottom-4 right-4 inline-flex h-9 items-center justify-center rounded px-3 text-sm font-medium",
+              "text-white",
+              isDark ? "bg-blue-500 hover:bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+            )}
+            aria-label={`${o.siteName} へメッセージ`}
+          >
+            メッセージ
+          </Link>
+        </div>
+      ))}
+    </div>
+
+    {/* 受信箱ボタン（ページ固定） */}
+    <Link
+      href="/community/message/inbox"
+      aria-label="受信箱"
+      className="fixed bottom-4 left-10 z-40 flex h-12 w-12 items-center justify-center rounded-full
+                 bg-blue-600 text-white shadow-lg transition hover:bg-blue-700 focus:outline-none"
+    >
+      <Inbox className="h-6 w-6" />
+    </Link>
+  </main>
+);
+
 }

@@ -99,6 +99,7 @@ export default function PostCard({ post }: { post: Post }) {
             width={40}
             height={40}
             className="h-10 w-10 rounded-full mr-2"
+            unoptimized
           />
           <div className="w-full rounded-xl px-4 py-2 shadow bg-green-500 text-white">
             <p className="font-semibold mb-1">{post.authorName}</p>
@@ -111,6 +112,7 @@ export default function PostCard({ post }: { post: Post }) {
                   width={600}
                   height={400}
                   className="rounded-lg object-contain max-h-96 w-full"
+                  unoptimized
                 />
               </div>
             )}
@@ -142,6 +144,7 @@ export default function PostCard({ post }: { post: Post }) {
                     width={28}
                     height={28}
                     className="h-7 w-7 rounded-full mr-2"
+                    unoptimized
                   />
                 )}
                 <div
@@ -168,6 +171,7 @@ export default function PostCard({ post }: { post: Post }) {
                     width={28}
                     height={28}
                     className="h-7 w-7 rounded-full ml-2"
+                    unoptimized 
                   />
                 )}
               </div>

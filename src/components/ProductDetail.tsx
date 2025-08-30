@@ -21,11 +21,11 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
+  listAll,
 } from "firebase/storage";
-import { ChevronLeft } from "lucide-react";
+import { motion } from "framer-motion";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
-/* あなたの siteKey に合わせてください */
-const SITE_KEY = "youFirst";
 
 type MediaType = "image" | "video";
 
@@ -82,8 +82,8 @@ export default function ProductDetail({ product }: { product: Product }) {
         if (!isValidImage && !isValidVideo)
           return alert("対応形式：JPEG/PNG/MP4/MOV");
 
-        if (isVideo && file.size > 50 * 1024 * 1024)
-          return alert("動画は 50 MB 未満にしてください");
+        if (isVideo && file.size > 100 * 1024 * 1024)
+          return alert("動画は 100 MB 未満にしてください");
 
         /* 圧縮（画像のみ） */
         const ext = isVideo
@@ -151,45 +151,54 @@ export default function ProductDetail({ product }: { product: Product }) {
   };
 
   // 削除
-  const handleDelete = async () => {
-    if (!confirm(`「${displayProduct.title}」を削除しますか？`)) return;
+ // 差し替え版 handleDelete
+const handleDelete = async () => {
+  if (!confirm(`「${displayProduct.title}」を削除しますか？`)) return;
 
-    await deleteDoc(doc(db, "siteProducts", SITE_KEY, "items", product.id));
+  const storage = getStorage();
 
-    const ext = displayProduct.mediaType === "video" ? "mp4" : "jpg";
-    await deleteObject(
-      ref(getStorage(), `products/public/${SITE_KEY}/${product.id}.${ext}`)
-    ).catch(() => {});
+  // 1) Firestore ドキュメントを先に削除（UI から消える）
+  await deleteDoc(doc(db, "siteProducts", SITE_KEY, "items", product.id)).catch(() => {});
 
-    router.back();
-  };
+  // 2) 元メディアを“実在するものだけ”削除
+  try {
+    // products/public/<SITE_KEY>/ 下を一覧して、<id>.xxx の実ファイルだけ消す
+    const folderRef = ref(storage, `products/public/${SITE_KEY}`);
+    const listing = await listAll(folderRef);
+    const mine = listing.items.filter((i) => i.name.startsWith(`${product.id}.`));
+    await Promise.all(mine.map((item) => deleteObject(item).catch(() => {})));
+  } catch {
+    /* 取得できなくても致命的ではないので握りつぶす */
+  }
+
+  // 3) HLS 配下（もしあれば）を再帰削除
+  try {
+    const walkAndDelete = async (dirRef: ReturnType<typeof ref>) => {
+      const ls = await listAll(dirRef);
+      await Promise.all(ls.items.map((i) => deleteObject(i).catch(() => {})));
+      await Promise.all(ls.prefixes.map((p) => walkAndDelete(p)));
+    };
+    const hlsDirRef = ref(storage, `products/public/${SITE_KEY}/hls/${product.id}`);
+    await walkAndDelete(hlsDirRef);
+  } catch {
+    /* HLS が無ければ何もしない */
+  }
+
+  // 4) 戻る
+  router.back();
+};
 
   /* ---------- JSX ---------- */
   return (
     <main className="min-h-screen flex items-start justify-center p-4 pt-24">
-      {/* 戻る */}
-      <button
-        onClick={() => router.back()}
-        aria-label="戻る"
-        className={clsx(
-          // 固定配置
-          "fixed top-[60px] left-3 z-40",
-          // 見た目
-          "p-2 rounded shadow transition-opacity",
-          "bg-gradient-to-b", // ★ 方向を指定
-          gradient, // ★ 2色グラデ（例: from-pink-500 to-red-500）
-          isDark ? "text-white" : "text-black",
-          "cursor-pointer",
-          "hover:opacity-80 backdrop-blur"
-        )}
-      >
-        <ChevronLeft size={20} />
-      </button>
-
       {/* カード外枠 */}
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.3 }}
         className={clsx(
-          "border rounded-lg overflow-hidden shadow relative transition-colors duration-200",
+          "border rounded-lg overflow-hidden shadow-xl relative transition-colors duration-200",
           "w-full max-w-md",
           "bg-gradient-to-b",
           "mt-5",
@@ -224,6 +233,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               fill
               className="object-cover"
               sizes="100vw"
+              unoptimized 
             />
           </div>
         ) : (
@@ -258,7 +268,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             </p>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* ---------- 編集モーダル ---------- */}
       {isAdmin && showEdit && (

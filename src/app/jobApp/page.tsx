@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
 export default function JobPage() {
   const [name, setName] = useState("");
@@ -12,16 +13,16 @@ export default function JobPage() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent">("idle");
 
-  const siteKey = "youFirst";
+
 
   const handleSubmit = async () => {
-    if (!name || !kana || !email || !message || !siteKey) return;
+    if (!name || !kana || !email || !message || !SITE_KEY) return;
     setStatus("loading");
 
     const res = await fetch("/api/send-job-application", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, kana, email, message, siteKey }),
+      body: JSON.stringify({ name, kana, email, message, SITE_KEY }),
     });
 
     if (res.ok) {

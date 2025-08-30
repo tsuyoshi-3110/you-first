@@ -1,7 +1,7 @@
 // src/app/(routes)/home/page.tsx
 
 import type { Metadata } from "next";
-import BackgroundVideo from "@/components/BackgroundVideo";
+import BackgroundVideo from "@/components/backgroundVideo/BackgroundVideo";
 import TopFixedText from "@/components/TopFixedText";
 
 export const metadata: Metadata = {
@@ -36,28 +36,23 @@ export default function HomePage() {
       </section>
 
       {/* ② テキスト紹介セクション */}
-      <section className="relative z-10 text-black px-4 py-20">
+      <section className="relative z-10 text-white px-4 py-20">
         {/* 編集可能な固定テキストコンポーネント */}
         <TopFixedText />
 
         {/* ページタイトルとリード文 */}
-        <h1 className="text-3xl text-white lg:text-4xl font-extrabold text-center leading-tight mb-6">
-          高崎市 ハウスクリーニング
-          <br />
-          ユーファースト
+        <h1 className="text-3xl lg:text-4xl font-extrabold text-center leading-tight mb-6 text-outline">
+          高崎市 ハウスクリーニング ユーファースト
         </h1>
 
-        <p className="max-w-3xl text-white mx-auto text-center leading-relaxed">
-          ユーファーストは、<b>高崎市密着</b>・<b>夫婦で営む</b>
-          安心のハウスクリーニング専門店です。
-          <br />
+        <p className="max-w-3xl mx-auto text-center leading-relaxed text-outline">
+          ユーファーストは、高崎市密着・夫婦で営む安心のハウスクリーニング専門店です。
           お部屋、水回り、引越し前後の清掃もプロにお任せください。
-          <br />
-          忙しいあなたの代わりに、心を込めてキレイに仕上げます♪
+          忙しいあなたの代わりに、心を込めてキレイに仕上げます♪ 。
         </p>
       </section>
 
-      {/* ③ JSON-LD（構造化データ）LocalBusiness型に変更 */}
+      {/* ③ JSON-LD（構造化データ） */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

@@ -7,8 +7,9 @@ import { useThemeGradient } from "@/lib/useThemeGradient";
 import { ThemeKey, THEMES } from "@/lib/themes";
 import clsx from "clsx";
 import { AsYouType, parsePhoneNumberFromString } from "libphonenumber-js";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
-const SITE_KEY = "youFirst";
+
 
 export function PhoneSection() {
   const [phone, setPhone] = useState<string | null>(null);

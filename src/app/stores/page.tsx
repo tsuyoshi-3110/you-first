@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     type: "website",
   },
-};
+};;
 
 export default function StoresPage() {
   return (
@@ -52,3 +52,4 @@ export default function StoresPage() {
     </main>
   );
 }
+

@@ -1,11 +1,21 @@
+// app/layout.tsx
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Script from "next/script";
 import ThemeBackground from "@/components/ThemeBackground";
 import WallpaperBackground from "@/components/WallpaperBackground";
 import SubscriptionOverlay from "@/components/SubscriptionOverlay";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
+import {
+  kosugiMaru,
+  notoSansJP,
+  shipporiMincho,
+  reggaeOne,
+  yomogi,
+  hachiMaruPop,
+} from "@/lib/font";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const geistMono = Geist_Mono({
@@ -13,7 +23,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-// --- ここを修正 ---
+// ✅ metadata から themeColor を削除
 export const metadata: Metadata = {
   title: "高崎市のハウスクリーニング｜ユーファースト（You-First）",
   description:
@@ -38,7 +48,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://you-first.shop/ogpLogo.jpg", // 横1200x630のjpgファイル（JPEG形式に注意！）
+        url: "/ogpLogo.jpg", // 横1200x630のjpgファイル（JPEG形式に注意！）
         width: 1200,
         height: 630,
         alt: "ユーファースト OGP画像",
@@ -51,70 +61,40 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL("https://you-first.shop"),
 };
-// --- ここまで ---
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const siteKey = "youFirst";
+// ✅ ここで themeColor を指定（root で一括適用）
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="ja"
-      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      className={`
+        ${geistSans.variable} ${geistMono.variable}
+        ${kosugiMaru.variable} ${notoSansJP.variable}
+        ${yomogi.variable} ${hachiMaruPop.variable} ${reggaeOne.variable} ${shipporiMincho.variable}
+        antialiased
+      `}
     >
       <head>
-        {/* ファビコン */}
-        <link rel="icon" href="/favicon.ico?v=2" />
-        {/* OGP画像事前読み込み */}
-        <link rel="preload" as="image" href="/ogpLogo.jpg" type="image/jpeg" />
-        <meta name="theme-color" content="#ffffff" />
-
-        {/* OGP & Twitterカード */}
-        <meta
-          property="og:title"
-          content="高崎市のハウスクリーニング｜ユーファースト"
-        />
-        <meta
-          property="og:description"
-          content="高崎市密着のハウスクリーニング専門店『ユーファースト』。安心のご夫婦経営で、丁寧・誠実な清掃サービスをご提供。お部屋や水回り、引越し前後の掃除も対応！"
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://you-first.shop/" />
-        <meta property="og:site_name" content="ユーファースト" />
-        <meta property="og:locale" content="ja_JP" />
-        <meta
-          property="og:image"
-          content="https://you-first.shop/ogpLogo.jpg"
-        />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content="高崎市のハウスクリーニング｜ユーファースト"
-        />
-        <meta
-          name="twitter:description"
-          content="高崎市密着のハウスクリーニング専門店『ユーファースト』。"
-        />
-        <meta
-          name="twitter:image"
-          content="https://you-first.shop/ogpLogo.jpg"
-        />
-        <meta
-          name="google-site-verification"
-          content="8AZTfHNLIjKekUhRgfB1ZiWOh-gy5BxDrIhvSWocU10"
-        />
+        {/* OGP画像の事前読み込み */}
+        <link rel="preload" as="image" href="/ogpLogo.png" type="image/png" />
+        <meta name="google-site-verification" content="uN73if1NMw0L6lYoLXqKJDBt56lxDXlmbZwfurtPFNs" />
       </head>
+
       <body className="relative min-h-screen bg-[#ffffff]">
-        <SubscriptionOverlay siteKey={siteKey} />
+        <SubscriptionOverlay siteKey={SITE_KEY} />
         <WallpaperBackground />
         <ThemeBackground />
         <Header />
         {children}
+
+         {/* 構造化データ */}
         <Script
           id="ld-json"
           type="application/ld+json"

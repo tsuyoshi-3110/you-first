@@ -47,11 +47,27 @@ import SortableItem from "./SortableItem";
 
 import { type Product } from "@/types/Product";
 
+import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
+
 type MediaType = "image" | "video";
+const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const VIDEO_MIME_TYPES = [
+  "video/mp4",
+  "video/webm",
+  "video/ogg",
+  "video/quicktime",
+  "video/x-m4v",
+  "video/x-msvideo",
+  "video/x-ms-wmv",
+  "video/mpeg",
+  "video/3gpp",
+  "video/3gpp2",
+];
+const MAX_VIDEO_SEC = 60;
 
-const SITE_KEY = "youFirst";
-
-export default function ProductsClient() {
+export default function StaffClient() {
   const [list, setList] = useState<Product[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [formMode, setFormMode] = useState<"add" | "edit" | null>(null);
@@ -122,7 +138,6 @@ export default function ProductsClient() {
   const saveProduct = async () => {
     if (uploading) return;
     if (!title.trim()) return alert("タイトル必須");
-    // if (price === "") return alert("価格を入力してください");
     if (formMode === "add" && !file) return alert("メディアを選択してください");
 
     try {
@@ -130,20 +145,14 @@ export default function ProductsClient() {
       let mediaURL = editing?.mediaURL ?? "";
       let mediaType: MediaType = editing?.mediaType ?? "image";
 
-      if (formMode === "add" && !file)
-        return alert("メディアを選択してください");
-
       if (file) {
-        const isVideo = file.type.startsWith("video/");
-        mediaType = isVideo ? "video" : "image";
+        const isImage = IMAGE_MIME_TYPES.includes(file.type);
+        const isVideo = VIDEO_MIME_TYPES.includes(file.type);
 
-        const isValidImage =
-          file.type === "image/jpeg" || file.type === "image/png";
-        const isValidVideo =
-          file.type === "video/mp4" || file.type === "video/quicktime";
-
-        if (!isValidImage && !isValidVideo) {
-          alert("対応形式：画像（JPEG, PNG）／動画（MP4, MOV）");
+        if (!isImage && !isVideo) {
+          alert(
+            "対応形式：画像（JPEG, PNG, WEBP, GIF）／動画（MP4, MOV など）"
+          );
           return;
         }
 
@@ -152,11 +161,35 @@ export default function ProductsClient() {
           return;
         }
 
-        const ext = isVideo
-          ? file.type === "video/quicktime"
-            ? "mov"
-            : "mp4"
-          : "jpg";
+        mediaType = isVideo ? "video" : "image";
+
+        const ext = (() => {
+          if (isVideo) {
+            switch (file.type) {
+              case "video/quicktime":
+                return "mov";
+              case "video/webm":
+                return "webm";
+              case "video/ogg":
+                return "ogv";
+              case "video/x-m4v":
+                return "m4v";
+              case "video/x-msvideo":
+                return "avi";
+              case "video/x-ms-wmv":
+                return "wmv";
+              case "video/mpeg":
+                return "mpg";
+              case "video/3gpp":
+                return "3gp";
+              case "video/3gpp2":
+                return "3g2";
+              default:
+                return "mp4";
+            }
+          }
+          return "jpg";
+        })();
 
         const uploadFile = isVideo
           ? file
@@ -186,11 +219,9 @@ export default function ProductsClient() {
         const downloadURL = await getDownloadURL(storageRef);
         if (!downloadURL) throw new Error("画像URLの取得に失敗しました");
 
-        // キャッシュバスターで強制更新
         mediaURL = `${downloadURL}?v=${uuid()}`;
         setProgress(null);
 
-        // 拡張子変更に伴う旧ファイル削除
         if (formMode === "edit" && editing) {
           const oldExt = editing.mediaType === "video" ? "mp4" : "jpg";
           if (oldExt !== ext) {
@@ -204,23 +235,18 @@ export default function ProductsClient() {
       type ProductPayload = {
         title: string;
         body: string;
-        // price: number;
         mediaURL: string;
         mediaType: "image" | "video";
         originalFileName?: string;
-        // taxIncluded: boolean;
       };
 
       const payload: ProductPayload = {
         title,
         body,
-        // price,
         mediaURL,
         mediaType,
-        // taxIncluded,
       };
 
-      // originalFileName があるときだけ追加
       const originalFileName = file?.name || editing?.originalFileName;
       if (originalFileName) {
         payload.originalFileName = originalFileName;
@@ -359,140 +385,25 @@ export default function ProductsClient() {
         >
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
             {list.map((p) => {
-              const isLoaded = loadedIds.has(p.id);
               return (
                 <SortableItem key={p.id} product={p}>
                   {({ listeners, attributes, isDragging }) => (
-                    <div
-                      className={clsx(
-                        // --- 既存 ---
-                        "flex flex-col h-full border rounded-lg overflow-hidden shadow relative transition-colors duration-200",
-                        "bg-gradient-to-b",
-                        gradient,
-                        isDragging
-                          ? "bg-yellow-100"
-                          : isDark
-                          ? "bg-black/40 text-white"
-                          : "bg-white",
-                        // --- ★ 追加ここだけ ★ ---
-                        // 管理者（ドラッグできる人）は常に grab カーソル。
-                        // それ以外の閲覧者には pointer カーソルを表示。
-                        "cursor-pointer",
-                        // hover で軽く陰影を強調（任意）
-                        !isDragging && "hover:shadow-lg"
-                      )}
-                    >
-                      {auth.currentUser !== null && (
-                        <div
-                          {...attributes}
-                          {...listeners}
-                          onTouchStart={(e) => e.preventDefault()}
-                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 cursor-grab active:cursor-grabbing touch-none select-none"
-                        >
-                          <div className="w-10 h-10 bg-gray-200 text-gray-700 rounded-full text-sm flex items-center justify-center shadow">
-                            ≡
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 編集・削除ボタン */}
-                      {isAdmin && (
-                        <div className="absolute top-2 right-2 z-20 flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEdit(p);
-                            }}
-                            disabled={uploading}
-                            className="px-2 py-1 bg-blue-600 text-white text-md rounded shadow disabled:opacity-50"
-                          >
-                            編集
-                          </button>
-                          <button
-                            onClick={() => remove(p)}
-                            disabled={uploading}
-                            className="px-2 py-1 bg-red-600 text-white text-md rounded shadow disabled:opacity-50"
-                          >
-                            削除
-                          </button>
-                        </div>
-                      )}
-
-                      {!isLoaded && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10">
-                          <svg
-                            className="w-8 h-8 animate-spin text-pink-600"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                            />
-                          </svg>
-                        </div>
-                      )}
-
-                      {/* メディア表示 */}
-                      {p.mediaType === "image" ? (
-                        <div className="relative w-full aspect-[1/1] sm:aspect-square">
-                          <Image
-                            src={p.mediaURL}
-                            alt={p.title}
-                            fill
-                            className="object-cover"
-                            sizes="(min-width:1024px) 320px, (min-width:640px) 45vw, 90vw"
-                            onLoad={() =>
-                              setLoadedIds((prev) => new Set(prev).add(p.id))
-                            }
-                          />
-                        </div>
-                      ) : (
-                        <div className="relative w-full aspect-[1/1] sm:aspect-square">
-                          <video
-                            src={p.mediaURL}
-                            muted
-                            playsInline
-                            autoPlay
-                            loop
-                            preload="auto"
-                            className="w-full h-full object-cover absolute top-0 left-0"
-                            onLoadedData={() =>
-                              setLoadedIds((prev) => new Set(prev).add(p.id))
-                            }
-                          />
-                        </div>
-                      )}
-
-                      {/* 商品情報 */}
-                      <div className="p-1 space-y-1">
-                        <h2
-                          className={clsx("text-sm font-bold", {
-                            "text-white": isDark,
-                          })}
-                        >
-                          {p.title}
-                        </h2>
-
-                        <p
-                          className={clsx(
-                            "text-sm whitespace-pre-wrap",
-                            isDark && "text-white"
-                          )}
-                        >
-                          {p.body}
-                        </p>
-                      </div>
-                    </div>
+                    <StaffCard
+                      product={p}
+                      isAdmin={isAdmin}
+                      isDragging={isDragging}
+                      isLoaded={loadedIds.has(p.id)}
+                      isDark={isDark}
+                      gradient={gradient}
+                      listeners={listeners}
+                      attributes={attributes}
+                      onEdit={openEdit}
+                      onRemove={remove}
+                      onMediaLoad={() =>
+                        setLoadedIds((prev) => new Set(prev).add(p.id))
+                      }
+                      uploading={uploading}
+                    />
                   )}
                 </SortableItem>
               );
@@ -590,10 +501,35 @@ export default function ProductsClient() {
                 </div>
               )}
             </div>
+            <label>画像 / 動画 (30秒以内)</label>
             <input
               type="file"
-              accept="image/*,video/mp4"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              accept={[...IMAGE_MIME_TYPES, ...VIDEO_MIME_TYPES].join(",")}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+
+                const isVideo = f.type.startsWith("video/");
+                if (!isVideo) {
+                  setFile(f);
+                  return;
+                }
+
+                const blobURL = URL.createObjectURL(f);
+                const vid = document.createElement("video");
+                vid.preload = "metadata";
+                vid.src = blobURL;
+
+                vid.onloadedmetadata = () => {
+                  URL.revokeObjectURL(blobURL);
+                  if (vid.duration > MAX_VIDEO_SEC) {
+                    alert(`動画は ${MAX_VIDEO_SEC} 秒以内にしてください`);
+                    e.target.value = ""; // リセット
+                    return;
+                  }
+                  setFile(f);
+                };
+              }}
               className="bg-gray-500 text-white w-full h-10 px-3 py-1 rounded"
               disabled={uploading}
             />
@@ -623,5 +559,163 @@ export default function ProductsClient() {
         </div>
       )}
     </main>
+  );
+}
+
+interface StoreCardProps {
+  product: Product;
+  isAdmin: boolean;
+  isDragging: boolean;
+  isLoaded: boolean;
+  isDark: boolean;
+  gradient: string;
+  listeners: any;
+  attributes: any;
+  onEdit: (p: Product) => void;
+  onRemove: (p: Product) => void;
+  onMediaLoad: () => void;
+  uploading: boolean;
+}
+
+export function StaffCard({
+  product: p,
+  isAdmin,
+  isDragging,
+  isLoaded,
+  isDark,
+  gradient,
+  listeners,
+  attributes,
+  onEdit,
+  onRemove,
+  onMediaLoad,
+  uploading,
+}: StoreCardProps) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -150px 0px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      layout={isDragging ? false : true}
+      initial={{ opacity: 0, y: 40 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+      transition={
+        isDragging ? { duration: 0 } : { duration: 0.6, ease: "easeOut" }
+      }
+      style={isDragging ? { transform: undefined } : undefined}
+      className={clsx(
+        "flex flex-col h-full border rounded-lg overflow-hidden shadow relative transition-colors duration-200",
+        "bg-gradient-to-b",
+        gradient,
+        isDragging
+          ? "z-50 shadow-xl"
+          : isDark
+          ? "bg-black/40 text-white"
+          : "bg-white",
+        "cursor-pointer",
+        !isDragging && "hover:shadow-lg"
+      )}
+    >
+      {auth.currentUser !== null && (
+        <div
+          {...attributes}
+          {...listeners}
+          onTouchStart={(e) => e.preventDefault()}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 cursor-grab active:cursor-grabbing touch-none select-none"
+        >
+          <div className="w-10 h-10 bg-gray-200 text-gray-700 rounded-full text-sm flex items-center justify-center shadow">
+            ≡
+          </div>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="absolute top-2 right-2 z-20 flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(p);
+            }}
+            disabled={uploading}
+            className="px-2 py-1 bg-blue-600 text-white text-md rounded shadow disabled:opacity-50"
+          >
+            編集
+          </button>
+          <button
+            onClick={() => onRemove(p)}
+            disabled={uploading}
+            className="px-2 py-1 bg-red-600 text-white text-md rounded shadow disabled:opacity-50"
+          >
+            削除
+          </button>
+        </div>
+      )}
+
+      {!isLoaded && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10">
+          <svg
+            className="w-8 h-8 animate-spin text-pink-600"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
+          </svg>
+        </div>
+      )}
+
+      {p.mediaType === "image" ? (
+        <div className="relative w-full aspect-[1/1] sm:aspect-square">
+          <Image
+            src={p.mediaURL}
+            alt={p.title}
+            fill
+            className="object-cover"
+            sizes="(min-width:1024px) 320px, (min-width:640px) 45vw, 90vw"
+            onLoad={onMediaLoad}
+            unoptimized 
+          />
+        </div>
+      ) : (
+        <div className="relative w-full aspect-[1/1] sm:aspect-square">
+          <video
+            src={p.mediaURL}
+            muted
+            playsInline
+            autoPlay
+            loop
+            preload="auto"
+            className="w-full h-full object-cover absolute top-0 left-0"
+            onLoadedData={onMediaLoad}
+          />
+        </div>
+      )}
+
+      <div className="p-3 space-y-2">
+        <h2 className={clsx("text-sm font-bold", isDark && "text-white")}>
+          {p.title}
+        </h2>
+        <p
+          className={clsx(
+            "text-sm whitespace-pre-wrap",
+            isDark && "text-white"
+          )}
+        >
+          {p.body}
+        </p>
+      </div>
+    </motion.div>
   );
 }

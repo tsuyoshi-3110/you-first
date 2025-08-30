@@ -3,20 +3,20 @@ import type { Metadata } from "next";
 import NewsClient from "@/components/NewsClient";
 
 export const metadata: Metadata = {
-  title: "お知らせ｜甘味処 よって屋",
+  title: "お知らせ｜おそうじ処 たよって屋",
   description:
-    "甘味処 よって屋のお知らせページ。最新情報やイベント情報をお届けします。",
+    "おそうじ処 たよって屋の最新情報・キャンペーン・営業時間や対応エリアに関するお知らせを掲載しています（大阪・兵庫エリア対応）。",
   openGraph: {
-    title: "お知らせ｜甘味処 よって屋",
+    title: "お知らせ｜おそうじ処 たよって屋",
     description:
-      "甘味処 よって屋のお知らせ。新メニューや営業時間変更など最新情報を掲載。",
-    url: "https://youFirst.shop/news",
-    siteName: "甘味処 よって屋",
-    images: [{ url: "/ogp-news.jpg", width: 1200, height: 630 }],
+      "最新のお知らせやキャンペーン情報、営業時間・対応エリアの変更などを随時ご案内します。",
+    url: "https://tayotteya.shop/news",
+    siteName: "おそうじ処 たよって屋",
+    images: [{ url: "/ogpLogo.png", width: 1200, height: 630 }],
     locale: "ja_JP",
     type: "website",
   },
-  alternates: { canonical: "https://youFirst.shop/news" },
+  alternates: { canonical: "https://tayotteya.shop/news" },
 };
 
 export default function NewsPage() {
