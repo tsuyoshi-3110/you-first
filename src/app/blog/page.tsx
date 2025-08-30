@@ -19,6 +19,8 @@ import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 import BlogCard from "@/components/blog/BlogCard";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, type User } from "firebase/auth";
 
 import { deleteObject, ref as storageRef } from "firebase/storage";
 import clsx from "clsx";
@@ -29,12 +31,18 @@ const PAGE_SIZE = 20;
 
 export default function BlogListPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [user, setUser] = useState<User | null>(null);
   const [cursor, setCursor] =
     useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [loading, setLoading] = useState(false);
   const [noMore, setNoMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, setUser);
+    return () => unsub();
+  }, []);
 
   // ===== テーマの判定 =====
   const gradient = useThemeGradient();
@@ -117,7 +125,9 @@ export default function BlogListPage() {
     setDeletingId(post.id);
     try {
       // --- blocks 内のメディア（新仕様）を削除 ---
-      const blocks = Array.isArray((post as any).blocks) ? (post as any).blocks : [];
+      const blocks = Array.isArray((post as any).blocks)
+        ? (post as any).blocks
+        : [];
       for (const b of blocks) {
         if ((b?.type === "image" || b?.type === "video") && b?.path) {
           try {
@@ -127,7 +137,9 @@ export default function BlogListPage() {
       }
 
       // --- 旧仕様 media 配列も後方互換で削除 ---
-      const medias = Array.isArray((post as any).media) ? (post as any).media : [];
+      const medias = Array.isArray((post as any).media)
+        ? (post as any).media
+        : [];
       for (const m of medias) {
         if (m?.path) {
           try {
@@ -193,12 +205,14 @@ export default function BlogListPage() {
       )}
 
       {/* 右下固定の + ボタン */}
-      <Link
-        href="/blog/new"
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95"
-      >
-        <span className="text-3xl leading-none">＋</span>
-      </Link>
+      {user && (
+        <Link
+          href="/blog/new"
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95"
+        >
+          <span className="text-3xl leading-none">＋</span>
+        </Link>
+      )}
     </div>
   );
 }
