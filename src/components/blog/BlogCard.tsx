@@ -11,6 +11,9 @@ import ProductMedia from "@/components/ProductMedia";
 import clsx from "clsx";
 import { useThemeGradient } from "@/lib/useThemeGradient";
 import { THEMES, ThemeKey } from "@/lib/themes";
+import { useEffect, useState } from "react";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 type Props = {
   post: BlogPost;
@@ -56,6 +59,13 @@ export default function BlogCard({
   const isDark = !!gradient && DARK_KEYS.some((k) => THEMES[k] === gradientClass);
 
   const blocks = toRenderableBlocks(post);
+
+  // ▼ 追加：ログイン状態を監視して編集/削除の表示を制御
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setIsLoggedIn(!!u));
+    return () => unsub();
+  }, []);
 
   return (
     <article
@@ -120,25 +130,27 @@ export default function BlogCard({
             : ""}
         </div>
 
-        {/* 操作行 */}
-        <div className="pt-2 flex items-center gap-2">
-          <Button asChild size="sm" variant={isDark ? "secondary" : "default"}>
-            <Link href={`/blog/${post.id}/edit`}>
-              <Pencil className="mr-1.5 h-4 w-4" />
-              編集
-            </Link>
-          </Button>
+        {/* 操作行（ログイン時のみ表示） */}
+        {isLoggedIn && (
+          <div className="pt-2 flex items-center gap-2">
+            <Button asChild size="sm" variant={isDark ? "secondary" : "default"}>
+              <Link href={`/blog/${post.id}/edit`}>
+                <Pencil className="mr-1.5 h-4 w-4" />
+                編集
+              </Link>
+            </Button>
 
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => onDelete?.(post)}
-            disabled={deleting}
-          >
-            <Trash className="mr-1.5 h-4 w-4" />
-            {deleting ? "削除中…" : "削除"}
-          </Button>
-        </div>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDelete?.(post)}
+              disabled={deleting}
+            >
+              <Trash className="mr-1.5 h-4 w-4" />
+              {deleting ? "削除中…" : "削除"}
+            </Button>
+          </div>
+        )}
       </div>
     </article>
   );
