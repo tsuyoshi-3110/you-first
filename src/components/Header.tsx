@@ -141,6 +141,7 @@ export default function Header({ className = "" }: { className?: string }) {
                 { href: "/stores", label: "対応エリア" },
                 { href: "/about", label: "当店の思い" },
                 { href: "/blog", label: "ブログ" },
+                { href: "/company", label: "会社概要" },
                 // { href: "/news", label: "お知らせ" },
                 // { href: "mailto:tsreform.yukisaito@gmail.com", label: "ご連絡はこちら" },
                 { href: "/apply", label: "ご予約はこちら" },
