@@ -50,25 +50,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { motion, useInView } from "framer-motion";
 
-/* 多言語候補 */
-const LANGS = [
-  { key: "en", label: "英語", emoji: "🇺🇸" },
-  { key: "zh", label: "中国語(簡体)", emoji: "🇨🇳" },
-  { key: "zh-TW", label: "中国語(繁体)", emoji: "🇹🇼" },
-  { key: "ko", label: "韓国語", emoji: "🇰🇷" },
-  { key: "fr", label: "フランス語", emoji: "🇫🇷" },
-  { key: "es", label: "スペイン語", emoji: "🇪🇸" },
-  { key: "de", label: "ドイツ語", emoji: "🇩🇪" },
-  { key: "pt", label: "ポルトガル語", emoji: "🇵🇹" },
-  { key: "it", label: "イタリア語", emoji: "🇮🇹" },
-  { key: "ru", label: "ロシア語", emoji: "🇷🇺" },
-  { key: "th", label: "タイ語", emoji: "🇹🇭" },
-  { key: "vi", label: "ベトナム語", emoji: "🇻🇳" },
-  { key: "id", label: "インドネシア語", emoji: "🇮🇩" },
-  { key: "hi", label: "ヒンディー語", emoji: "🇮🇳" },
-  { key: "ar", label: "アラビア語", emoji: "🇸🇦" },
-] as const;
-type LangKey = (typeof LANGS)[number]["key"];
+
 
 const STORE_COL = `siteStores/${SITE_KEY}/items`;
 const STORAGE_PATH = `stores/public/${SITE_KEY}`;
@@ -105,17 +87,7 @@ export default function StoresClient() {
   const [aiFeature, setAiFeature] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  // 多言語ピッカー
-  const [showLangPicker, setShowLangPicker] = useState(false);
-  const [langQuery, setLangQuery] = useState("");
-  const [translating, setTranslating] = useState(false);
 
-  // 追記時の重複・同時実行ガード
-  const inFlightRef = useRef(false);
-  const doneLangsRef = useRef<Set<LangKey>>(new Set());
-  const baseNameRef = useRef<string>("");
-  const baseDescRef = useRef<string>("");
-  const baseAddrRef = useRef<string>("");
 
   const [submitFlag, setSubmitFlag] = useState(false);
 
@@ -178,110 +150,9 @@ export default function StoresClient() {
     return () => unsub();
   }, [colRef]);
 
-  /* ===== 多言語ユーティリティ ===== */
-  const filteredLangs = useMemo(() => {
-    const q = langQuery.trim().toLowerCase();
-    if (!q) return LANGS;
-    return LANGS.filter(
-      (l) =>
-        l.label.toLowerCase().includes(q) || l.key.toLowerCase().includes(q)
-    );
-  }, [langQuery]);
 
-  const norm = (s: string) => (s ?? "").replace(/\r/g, "").trim();
-  const hasSameLine = (text: string, candidate: string) => {
-    const lines = norm(text)
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const c = norm(candidate);
-    return !!c && lines.includes(c);
-  };
-  const containsParagraph = (text: string, paragraph: string) =>
-    !!norm(paragraph) && norm(text).includes(norm(paragraph));
-  const firstLine = (s: string) => (s || "").split("\n")[0]?.trim() ?? "";
-  const firstParagraph = (s: string) =>
-    (s || "").split(/\n{2,}/)[0]?.trim() ?? "";
 
-  const openLang = () => {
-    if (!name.trim() && !description.trim() && !address.trim()) {
-      alert("店舗名・住所・紹介文のいずれかを入力してください");
-      return;
-    }
-    baseNameRef.current = firstLine(name);
-    baseDescRef.current = firstParagraph(description);
-    baseAddrRef.current = (address ?? "").replace(/\r/g, "").trim();
-    doneLangsRef.current = new Set();
-    inFlightRef.current = false;
-    setLangQuery("");
-    setShowLangPicker(true);
-  };
 
-  const translateOnce = async (
-    title: string,
-    body: string,
-    target: LangKey
-  ) => {
-    const res = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, body, target }),
-    });
-    if (!res.ok) throw new Error("翻訳APIエラー");
-    return (await res.json()) as { title?: string; body?: string };
-  };
-
-  const translateAndAppend = async (target: LangKey) => {
-    if (inFlightRef.current) return;
-    if (doneLangsRef.current.has(target)) return;
-    inFlightRef.current = true;
-    try {
-      setTranslating(true);
-
-      // 店名＋紹介文
-      if (baseNameRef.current || baseDescRef.current) {
-        const data = await translateOnce(
-          baseNameRef.current,
-          baseDescRef.current || " ",
-          target
-        );
-        const tTitle = norm(data.title ?? "");
-        const tBody = norm(data.body ?? "");
-        if (
-          tTitle &&
-          tTitle !== norm(baseNameRef.current) &&
-          !hasSameLine(name, tTitle)
-        ) {
-          setName((prev) => (prev ? `${prev}\n${tTitle}` : tTitle));
-        }
-        if (tBody && !containsParagraph(description, tBody)) {
-          setDescription((prev) => (prev ? `${prev}\n\n${tBody}` : tBody));
-        }
-      }
-
-      // 住所（原文全文→翻訳1行を末尾に追記）
-      if (baseAddrRef.current) {
-        const addrData = await translateOnce(baseAddrRef.current, " ", target);
-        const tAddr = norm(addrData.title ?? "");
-        if (
-          tAddr &&
-          tAddr !== norm(baseAddrRef.current) &&
-          !hasSameLine(address, tAddr)
-        ) {
-          setAddress((prev) => (prev ? `${prev}\n${tAddr}` : tAddr));
-        }
-      }
-
-      doneLangsRef.current.add(target);
-      setShowLangPicker(false);
-    } catch (e) {
-      console.error(e);
-      alert("翻訳に失敗しました。時間をおいて再度お試しください。");
-    } finally {
-      setTranslating(false);
-      inFlightRef.current = false;
-    }
-  };
 
   /* ===== CRUD ===== */
   const openAdd = () => {
@@ -572,16 +443,7 @@ export default function StoresClient() {
               )}
             </button>
 
-            {/* 多言語対応 */}
-            {(name.trim() || address.trim() || description.trim()) && (
-              <button
-                onClick={openLang}
-                className="w-full mt-2 px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
-                disabled={uploading || aiLoading || translating}
-              >
-                AIで多国語対応
-              </button>
-            )}
+
 
             {/* AIモーダル */}
             {showAIModal && (
@@ -666,97 +528,6 @@ export default function StoresClient() {
               </div>
             )}
 
-            {/* 言語ピッカー */}
-            {showLangPicker && (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40"
-                onClick={() => !translating && setShowLangPicker(false)}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{ duration: 0.18 }}
-                  className="w-full max-w-lg mx-4 rounded-2xl shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="rounded-2xl bg-white/90 backdrop-saturate-150 border border-white/50">
-                    <div className="p-5 border-b border-black/5 flex items-center justify-between">
-                      <h3 className="text-lg font-bold">言語を選択</h3>
-                      <button
-                        type="button"
-                        onClick={() => setShowLangPicker(false)}
-                        className="text-sm text-gray-500 hover:text-gray-800"
-                        disabled={translating}
-                      >
-                        閉じる
-                      </button>
-                    </div>
-
-                    <div className="px-5 pt-4">
-                      <input
-                        type="text"
-                        value={langQuery}
-                        onChange={(e) => setLangQuery(e.target.value)}
-                        placeholder="言語名やコードで検索（例: フランス語 / fr）"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {filteredLangs.map((lng) => (
-                        <button
-                          key={lng.key}
-                          type="button"
-                          onClick={() => translateAndAppend(lng.key)}
-                          disabled={translating}
-                          className={clsx(
-                            "group relative rounded-xl border p-3 text-left transition",
-                            "bg-white hover:shadow-lg hover:-translate-y-0.5",
-                            "focus:outline-none focus:ring-2 focus:ring-indigo-500",
-                            "disabled:opacity-60"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-xl">{lng.emoji}</span>
-                            <div className="min-w-0">
-                              <div className="font-semibold truncate">
-                                {lng.label}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                /{lng.key}
-                              </div>
-                            </div>
-                          </div>
-                          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-indigo-400 opacity-0 group-hover:opacity-100 transition" />
-                        </button>
-                      ))}
-                      {filteredLangs.length === 0 && (
-                        <div className="col-span-full text-center text-sm text-gray-500 py-6">
-                          一致する言語が見つかりません
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="px-5 pb-5">
-                      <button
-                        type="button"
-                        onClick={() => setShowLangPicker(false)}
-                        className="w-full rounded-lg px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700"
-                        disabled={translating}
-                      >
-                        キャンセル
-                      </button>
-                    </div>
-
-                    {translating && (
-                      <div className="h-1 w-full overflow-hidden rounded-b-2xl">
-                        <div className="h-full w-1/2 animate-[progress_1.2s_ease-in-out_infinite] bg-indigo-500" />
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              </div>
-            )}
 
             {/* 画像選択 */}
             <div>

@@ -80,24 +80,7 @@ const IMAGE_MIME_TYPES: string[] = [
   "image/gif",
 ];
 
-/* ✅ ESLint対策のため外に出す */
-const LANGS = [
-  { key: "en", label: "英語", emoji: "🇺🇸" },
-  { key: "zh", label: "中国語(簡体)", emoji: "🇨🇳" },
-  { key: "zh-TW", label: "中国語(繁体)", emoji: "🇹🇼" },
-  { key: "ko", label: "韓国語", emoji: "🇰🇷" },
-  { key: "fr", label: "フランス語", emoji: "🇫🇷" },
-  { key: "es", label: "スペイン語", emoji: "🇪🇸" },
-  { key: "de", label: "ドイツ語", emoji: "🇩🇪" },
-  { key: "pt", label: "ポルトガル語", emoji: "🇵🇹" },
-  { key: "it", label: "イタリア語", emoji: "🇮🇹" },
-  { key: "ru", label: "ロシア語", emoji: "🇷🇺" },
-  { key: "th", label: "タイ語", emoji: "🇹🇭" },
-  { key: "vi", label: "ベトナム語", emoji: "🇻🇳" },
-  { key: "id", label: "インドネシア語", emoji: "🇮🇩" },
-  { key: "hi", label: "ヒンディー語", emoji: "🇮🇳" },
-  { key: "ar", label: "アラビア語", emoji: "🇸🇦" },
-] as const;
+
 
 export default function ProductsClient() {
   const [list, setList] = useState<Product[]>([]);
@@ -119,19 +102,7 @@ export default function ProductsClient() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  /* ✅ 多国語UI */
-  const [showLangPicker, setShowLangPicker] = useState(false);
-  const [translating, setTranslating] = useState(false);
 
-  const [langQuery, setLangQuery] = useState("");
-  const filteredLangs = useMemo(() => {
-    if (!langQuery.trim()) return LANGS;
-    const q = langQuery.trim().toLowerCase();
-    return LANGS.filter(
-      (l) =>
-        l.label.toLowerCase().includes(q) || l.key.toLowerCase().includes(q)
-    );
-  }, [langQuery]);
 
   const gradient = useThemeGradient();
   const router = useRouter();
@@ -229,33 +200,7 @@ export default function ProductsClient() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loadMore, loadingMore, hasMore]);
 
-  /* ✅ 翻訳→追記（タイトルは改行で追加） */
-  const translateAndAppend = useCallback(
-    async (langKey: (typeof LANGS)[number]["key"]) => {
-      if (!title.trim() || !body.trim()) return;
-      setTranslating(true);
-      try {
-        const res = await fetch("/api/translate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, body, target: langKey }),
-        });
-        if (!res.ok) throw new Error("翻訳APIエラー");
-        const data = (await res.json()) as { title: string; body: string };
 
-        setTitle((prev) => `${prev}\n${data.title}`); // ← 改行追記
-        setBody((prev) => `${prev}\n\n${data.body}`);
-
-        setShowLangPicker(false);
-      } catch (e) {
-        console.error(e);
-        alert("翻訳に失敗しました。時間をおいて再度お試しください。");
-      } finally {
-        setTranslating(false);
-      }
-    },
-    [title, body]
-  );
 
   const saveProduct = async () => {
     if (uploading) return;
@@ -679,116 +624,6 @@ export default function ProductsClient() {
               <p className="text-sm text-gray-600">
                 現在のファイル: {editing.originalFileName}
               </p>
-            )}
-
-            {/* ✅ AIで多国語対応 */}
-            {title.trim() && body.trim() && (
-              <button
-                onClick={() => setShowLangPicker(true)}
-                className="w-full mt-2 px-4 py-2 bg-purple-600 text-white rounded disabled:opacity-50"
-                disabled={uploading || aiLoading || translating}
-              >
-                AIで多国語対応
-              </button>
-            )}
-
-            {/* ピッカー */}
-            {showLangPicker && (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40"
-                onClick={() => !translating && setShowLangPicker(false)}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                  transition={{ duration: 0.18 }}
-                  className="w-full max-w-lg mx-4 rounded-2xl shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* ガラス風カード */}
-                  <div className="rounded-2xl bg-white/90 backdrop-saturate-150 border border-white/50">
-                    <div className="p-5 border-b border-black/5 flex items-center justify-between">
-                      <h3 className="text-lg font-bold">言語を選択</h3>
-                      <button
-                        type="button"
-                        onClick={() => setShowLangPicker(false)}
-                        className="text-sm text-gray-500 hover:text-gray-800"
-                        disabled={translating}
-                      >
-                        閉じる
-                      </button>
-                    </div>
-
-                    {/* 検索 */}
-                    <div className="px-5 pt-4">
-                      <input
-                        type="text"
-                        value={langQuery}
-                        onChange={(e) => setLangQuery(e.target.value)}
-                        placeholder="言語名やコードで検索（例: フランス語 / fr）"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    {/* グリッド */}
-                    <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {filteredLangs.map((lng) => (
-                        <button
-                          key={lng.key}
-                          type="button"
-                          onClick={() => translateAndAppend(lng.key)}
-                          disabled={translating}
-                          className={clsx(
-                            "group relative rounded-xl border p-3 text-left transition",
-                            "bg-white hover:shadow-lg hover:-translate-y-0.5",
-                            "focus:outline-none focus:ring-2 focus:ring-indigo-500",
-                            "disabled:opacity-60"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-xl">{lng.emoji}</span>
-                            <div className="min-w-0">
-                              <div className="font-semibold truncate">
-                                {lng.label}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                /{lng.key}
-                              </div>
-                            </div>
-                          </div>
-                          {/* 右上のアクセント */}
-                          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-indigo-400 opacity-0 group-hover:opacity-100 transition" />
-                        </button>
-                      ))}
-                      {filteredLangs.length === 0 && (
-                        <div className="col-span-full text-center text-sm text-gray-500 py-6">
-                          一致する言語が見つかりません
-                        </div>
-                      )}
-                    </div>
-
-                    {/* フッター */}
-                    <div className="px-5 pb-5">
-                      <button
-                        type="button"
-                        onClick={() => setShowLangPicker(false)}
-                        className="w-full rounded-lg px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700"
-                        disabled={translating}
-                      >
-                        キャンセル
-                      </button>
-                    </div>
-
-                    {/* ローディングバー（翻訳中のわかりやすい表示） */}
-                    {translating && (
-                      <div className="h-1 w-full overflow-hidden rounded-b-2xl">
-                        <div className="h-full w-1/2 animate-[progress_1.2s_ease-in-out_infinite] bg-indigo-500" />
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              </div>
             )}
 
             <div className="flex gap-2 justify-center">
