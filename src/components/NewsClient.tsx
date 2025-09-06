@@ -1,3 +1,4 @@
+// app/(wherever)/NewsClient.tsx
 "use client";
 
 import React, {
@@ -38,6 +39,8 @@ import MediaWithSpinner from "./MediaWithSpinner";
 import Image from "next/image";
 import { useThemeGradient } from "@/lib/useThemeGradient";
 import { THEMES, ThemeKey } from "@/lib/themes";
+import { AnimatePresence, motion, useInView } from "framer-motion";
+import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
 /* ---------- 型 ---------- */
 interface NewsItem {
@@ -66,10 +69,10 @@ const ALLOWED_VIDEO = [
   "video/3gpp2",
 ];
 const MAX_VIDEO_SEC = 30;
-const STORAGE_PATH = "siteNews/youFirst/items";
+const STORAGE_PATH = `siteNews/${SITE_KEY}/items`;
 
-const FIRST_LOAD = 20; // 初回
-const PAGE_SIZE = 20; // 追加ロード
+const FIRST_LOAD = 20;
+const PAGE_SIZE = 20;
 
 const DARK_KEYS: ThemeKey[] = ["brandG", "brandH", "brandI"];
 
@@ -108,29 +111,30 @@ export default function NewsClient() {
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const isFetchingMore = useRef(false);
+  const loadedMoreRef = useRef(false);
 
   /* エラー表示 */
   const [alertVisible, setAlertVisible] = useState(false);
 
-  /* AI生成 */
+  /* AI 本文生成 */
   const [showAIModal, setShowAIModal] = useState(false);
   const [keywords, setKeywords] = useState(["", "", ""]);
   const [aiLoading, setAiLoading] = useState(false);
-  const nonEmptyKeywords = keywords.filter(Boolean);
+  const nonEmptyKeywords = keywords.filter((k) => k.trim() !== "");
 
   /* ---------- Firestore 参照 ---------- */
-  const SITE_KEY = "youFirst";
+  const SITE_KEY_CONST = "fishInc2021"; // ← 必要なら props 等で差し替え
   const colRef = useMemo(
-    () => collection(db, "siteNews", SITE_KEY, "items"),
-    []
+    () => collection(db, "siteNews", SITE_KEY_CONST, "items"),
+    [SITE_KEY_CONST]
   );
 
   /* ---------- 初期フェッチ & 認証 ---------- */
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
+  // 1ページ目を onSnapshot で購読（Map マージで一意化）
   useEffect(() => {
-    if (isFetchingMore.current) return; // 二重実行防止
-    isFetchingMore.current = true;
+    if (isFetchingMore.current) return;
 
     const firstQuery = query(
       colRef,
@@ -138,45 +142,63 @@ export default function NewsClient() {
       limit(FIRST_LOAD)
     );
 
-    // ------- 🔴 onSnapshot で購読を開始 -------
     const unsub = onSnapshot(firstQuery, (snap) => {
       const firstPage: NewsItem[] = snap.docs.map((d) => ({
         id: d.id,
         ...(d.data() as Omit<NewsItem, "id">),
       }));
 
-      setItems(firstPage);
-      setLastDoc(snap.docs.at(-1) ?? null);
-      setHasMore(snap.docs.length === FIRST_LOAD);
-      isFetchingMore.current = false;
+      setItems((prev) => {
+        const map = new Map<string, NewsItem>(prev.map((x) => [x.id, x]));
+        firstPage.forEach((x) => map.set(x.id, x));
+        return [...map.values()].sort(
+          (a, b) =>
+            (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0)
+        );
+      });
+
+      if (!loadedMoreRef.current) {
+        setLastDoc(snap.docs.at(-1) ?? null);
+      }
+      setHasMore(snap.size === FIRST_LOAD);
     });
 
-    // アンマウント時にリスナー解除
     return () => unsub();
   }, [colRef]);
 
+  // 2ページ目以降のフェッチ
   const fetchNextPage = useCallback(async () => {
     if (isFetchingMore.current || !hasMore || !lastDoc) return;
     isFetchingMore.current = true;
+    loadedMoreRef.current = true;
 
-    const nextQuery = query(
-      colRef,
-      orderBy("createdAt", "desc"),
-      startAfter(lastDoc),
-      limit(PAGE_SIZE)
-    );
+    try {
+      const nextQuery = query(
+        colRef,
+        orderBy("createdAt", "desc"),
+        startAfter(lastDoc),
+        limit(PAGE_SIZE)
+      );
+      const snap = await getDocs(nextQuery);
+      const nextPage: NewsItem[] = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<NewsItem, "id">),
+      }));
 
-    const snap = await getDocs(nextQuery);
+      setItems((prev) => {
+        const map = new Map<string, NewsItem>(prev.map((x) => [x.id, x]));
+        nextPage.forEach((x) => map.set(x.id, x));
+        return [...map.values()].sort(
+          (a, b) =>
+            (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0)
+        );
+      });
 
-    const nextPage: NewsItem[] = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<NewsItem, "id">),
-    }));
-
-    setItems((prev) => [...prev, ...nextPage]);
-    setLastDoc(snap.docs.at(-1) ?? null);
-    setHasMore(snap.docs.length === PAGE_SIZE);
-    isFetchingMore.current = false;
+      setLastDoc(snap.docs.at(-1) ?? null);
+      setHasMore(snap.size === PAGE_SIZE);
+    } finally {
+      isFetchingMore.current = false;
+    }
   }, [colRef, lastDoc, hasMore]);
 
   /* ---------- 無限スクロール ---------- */
@@ -197,7 +219,6 @@ export default function NewsClient() {
   /* =====================================================
       メディア選択 & プレビュー
   ===================================================== */
-  /* ➊ プレビュー用 URL をこの関数内で 1 回だけ発行 */
   const handleSelectFile = (file: File) => {
     const isImage = ALLOWED_IMG.includes(file.type);
     const isVideo = ALLOWED_VIDEO.includes(file.type);
@@ -207,31 +228,26 @@ export default function NewsClient() {
       return;
     }
 
-    /* ---- 動画の場合：長さチェック ---- */
     if (isVideo) {
       const video = document.createElement("video");
       const blobURL = URL.createObjectURL(file);
-
       video.preload = "metadata";
       video.src = blobURL;
-
       video.onloadedmetadata = () => {
         if (video.duration > MAX_VIDEO_SEC) {
           alert("動画は30秒以内にしてください");
-          URL.revokeObjectURL(blobURL); // チェックだけで使わないので即解放
+          URL.revokeObjectURL(blobURL);
           return;
         }
         setDraftFile(file);
-        setPreviewURL(blobURL); // ※ここでは revoke しない
+        setPreviewURL(blobURL);
       };
-
       return;
     }
 
-    /* ---- 画像の場合 ---- */
     const blobURL = URL.createObjectURL(file);
     setDraftFile(file);
-    setPreviewURL(blobURL); // ※ここでも revoke しない
+    setPreviewURL(blobURL);
   };
 
   /* =====================================================
@@ -244,7 +260,9 @@ export default function NewsClient() {
     setDraftFile(null);
     setPreviewURL(null);
     setModalOpen(true);
+    setAlertVisible(false);
   };
+
   const openEdit = (n: NewsItem) => {
     setEditingId(n.id);
     setTitle(n.title);
@@ -252,12 +270,15 @@ export default function NewsClient() {
     setDraftFile(null);
     setPreviewURL(null);
     setModalOpen(true);
+    setAlertVisible(false);
   };
+
   const closeModal = () => {
     setModalOpen(false);
     setEditingId(null);
     setTitle("");
     setBody("");
+    if (previewURL) URL.revokeObjectURL(previewURL);
     setDraftFile(null);
     setPreviewURL(null);
     setAlertVisible(false);
@@ -272,15 +293,12 @@ export default function NewsClient() {
 
     setUploading(true);
     try {
-      const payload: Partial<NewsItem> = {
-        title,
-        body,
-        ...(editingId
-          ? { updatedAt: Timestamp.now() }
-          : { createdAt: Timestamp.now(), createdBy: user.uid }),
-      };
+      const base: Partial<NewsItem> = { title, body };
+      const payload: Partial<NewsItem> = editingId
+        ? { ...base, updatedAt: Timestamp.now() }
+        : { ...base, createdAt: Timestamp.now(), createdBy: user.uid };
 
-      /* メディアアップロード */
+      // メディアアップロード
       if (draftFile) {
         const sRef = ref(
           getStorage(),
@@ -312,7 +330,16 @@ export default function NewsClient() {
         await addDoc(colRef, payload as Omit<NewsItem, "id">);
       }
 
-      closeModal();
+      // 成功時：インラインでリセット
+      setModalOpen(false);
+      setEditingId(null);
+      setTitle("");
+      setBody("");
+      if (previewURL) URL.revokeObjectURL(previewURL);
+      setDraftFile(null);
+      setPreviewURL(null);
+      setAlertVisible(false);
+      setKeywords(["", "", ""]);
     } catch (err) {
       console.error(err);
       alert("保存に失敗しました");
@@ -321,7 +348,7 @@ export default function NewsClient() {
       setUploadPct(null);
       setUploadTask(null);
     }
-  }, [title, body, draftFile, editingId, user, colRef]);
+  }, [title, body, draftFile, editingId, user, colRef, previewURL]);
 
   /* =====================================================
       削除
@@ -329,11 +356,13 @@ export default function NewsClient() {
   const handleDelete = useCallback(
     async (n: NewsItem) => {
       if (!user || !confirm("本当に削除しますか？")) return;
+
       await deleteDoc(doc(colRef, n.id));
-      if (n.mediaUrl)
+      if (n.mediaUrl) {
         try {
-          await deleteObject(ref(getStorage(), n.mediaUrl));
+          await deleteObject(ref(getStorage(), n.mediaUrl as any));
         } catch {}
+      }
       setItems((prev) => prev.filter((m) => m.id !== n.id));
     },
     [user, colRef]
@@ -386,7 +415,7 @@ export default function NewsClient() {
             現在、お知らせはまだありません。
           </li>
         ) : (
-          <AnimatePresence /* 退場アニメ不要なら削除可 */ initial={false}>
+          <AnimatePresence initial={false}>
             {items.map((item) => (
               <NewsCard
                 key={item.id}
@@ -394,6 +423,7 @@ export default function NewsClient() {
                 user={user}
                 openEdit={openEdit}
                 handleDelete={handleDelete}
+                isDark={isDark}
               />
             ))}
           </AnimatePresence>
@@ -414,9 +444,7 @@ export default function NewsClient() {
 
       {/* ===== 追加 / 編集モーダル ===== */}
       {modalOpen && (
-        // ▼ ① 画面全体を縦スクロールできるように overflow-y-auto を追加
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto">
-          {/* ▼ ② モーダル本体にも最大高さを指定し、中だけスクロールできるように */}
           <div
             className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 my-8
                 max-h-[90vh] overflow-y-auto"
@@ -428,13 +456,13 @@ export default function NewsClient() {
             {/* ---------- 入力欄 ---------- */}
             <input
               className="w-full border px-3 py-2 rounded"
-              placeholder="タイトル"
+              placeholder="タイトル（翻訳は末尾に改行で追記されます）"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
             <textarea
               className="w-full border px-3 py-2 rounded h-40"
-              placeholder="本文"
+              placeholder="本文（翻訳は末尾に新しい段落として追記されます）"
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />
@@ -458,7 +486,7 @@ export default function NewsClient() {
               />
 
               {previewURL &&
-                (ALLOWED_VIDEO.includes(draftFile!.type) ? (
+                (draftFile && ALLOWED_VIDEO.includes(draftFile.type) ? (
                   <video
                     src={previewURL}
                     className="w-full mt-2 rounded"
@@ -467,12 +495,12 @@ export default function NewsClient() {
                 ) : (
                   <div className="relative w-full mt-2 rounded overflow-hidden">
                     <Image
-                      src={previewURL} // blob: URL そのまま
+                      src={previewURL}
                       alt="preview"
-                      fill // width/height の代わり
+                      fill
                       sizes="100vw"
                       className="object-cover"
-                      unoptimized /* ★ 最適化を無効化する */
+                      unoptimized
                     />
                   </div>
                 ))}
@@ -485,7 +513,7 @@ export default function NewsClient() {
                   alert("タイトルを入力してください。");
                   return;
                 }
-                setShowAIModal(true); // モーダルを開く
+                setShowAIModal(true);
               }}
               className="bg-purple-600 text-white w-full py-2 rounded"
             >
@@ -525,7 +553,7 @@ export default function NewsClient() {
 
       {/* ===== AI モーダル ===== */}
       {showAIModal && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
             <h3 className="text-xl font-bold text-center">AIで本文を生成</h3>
 
@@ -599,62 +627,37 @@ export default function NewsClient() {
   );
 }
 
-/* ===== ◆ ②：カード用サブコンポーネント（ファイル末尾に追加）=== */
-import { AnimatePresence, motion, useInView } from "framer-motion";
-
-interface NewsCardProps {
+/* ===== カード用サブコンポーネント ===== */
+function NewsCard({
+  item,
+  user,
+  openEdit,
+  handleDelete,
+  isDark,
+}: {
   item: NewsItem;
   user: User | null;
   openEdit: (n: NewsItem) => void;
   handleDelete: (n: NewsItem) => void;
-}
-
-function NewsCard({ item, user, openEdit, handleDelete }: NewsCardProps) {
-  /* ―― in-view 判定 ――――――――――――――――――― */
+  isDark: boolean;
+}) {
   const ref = useRef<HTMLLIElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -150px 0px" });
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 32, scale: 0.94 },
-
-    /* 画面内に入ったとき */
-    visible: {
-      opacity: 1,
-      y: [-8, 4, 0], // ① ちょい上へ → 下へ戻ってピタッ
-      scale: [0.94, 1.02, 1], // ② 同時にスケールも弾ませる
-      transition: {
-        opacity: { duration: 0.25 }, // フェードは素早く
-        y: {
-          type: "spring",
-          stiffness: 420, // バネの強さ
-          damping: 24, // 揺れの収束速度
-          mass: 0.5,
-        },
-        scale: {
-          type: "spring",
-          stiffness: 480,
-          damping: 32,
-          mass: 0.5,
-        },
-        delay: 0.05, // 少しだけ遅らせてフェードとズラす
-      },
-    },
-  };
 
   return (
     <motion.li
       ref={ref}
-      variants={itemVariants}
-      /* 初回表示アニメ */
       initial={{ opacity: 0, y: 40 }}
       animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      /* 削除時アニメ（任意）*/
       exit={{ opacity: 0, y: 40 }}
-      /* カードの見た目 */
-      className="bg-white/50 p-6 rounded-lg shadow"
+      className={`p-6 rounded-lg shadow border ${
+        isDark
+          ? "bg-gray-800 text-white border-gray-700"
+          : "bg-white text-gray-900 border-gray-200"
+      }`}
     >
-      <h2 className="font-bold">{item.title}</h2>
+      <h2 className="font-bold whitespace-pre-wrap">{item.title}</h2>
 
       {/* メディア（画像 / 動画） */}
       {item.mediaUrl && (
