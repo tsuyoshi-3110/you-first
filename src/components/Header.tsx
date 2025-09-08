@@ -135,17 +135,17 @@ export default function Header({ className = "" }: { className?: string }) {
 
             <div className="flex-1 flex flex-col justify-center items-center space-y-4 text-center">
               {[
+                { href: "/company", label: "会社概要" },
                 { href: "/products", label: "施工実績" },
                 { href: "/staffs", label: "スタッフ" },
                 { href: "/menu", label: "料金" },
                 { href: "/stores", label: "対応エリア" },
                 { href: "/about", label: "当店の思い" },
                 { href: "/blog", label: "ブログ" },
-                { href: "/company", label: "会社概要" },
+                { href: "/apply", label: "お問い合わせ" },
                 // { href: "/news", label: "お知らせ" },
                 // { href: "mailto:tsreform.yukisaito@gmail.com", label: "ご連絡はこちら" },
-                { href: "/apply", label: "ご予約はこちら" },
-                { href: "/jobApp", label: "協力業者募集！" },
+                { href: "/jobApp", label: "協力業者募集" },
               ].map(({ href, label }) => (
                 <Link
                   key={href}
