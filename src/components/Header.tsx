@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,20 @@ import { THEMES, ThemeKey } from "@/lib/themes"; // 🔧 追加
 
 const HEADER_H = "3rem";
 
+// ★ 3タップ検出の閾値（追加）
+const TRIPLE_TAP_INTERVAL_MS = 500;
+const IGNORE_SELECTOR = "a,button,input,select,textarea,[role='button']";
+
 export default function Header({ className = "" }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const gradient = useThemeGradient();
   const logoUrl = useHeaderLogoUrl();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // ★ 管理者リンク表示フラグ & タップ計測（追加）
+  const [showAdminLink, setShowAdminLink] = useState(false);
+  const tapCountRef = useRef(0);
+  const lastTapAtRef = useRef(0);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -43,6 +52,39 @@ export default function Header({ className = "" }: { className?: string }) {
     ([, v]) => v === gradient
   )?.[0] ?? null) as ThemeKey | null;
   const isDark = currentKey ? darkKeys.includes(currentKey) : false;
+
+  // ★ Sheet を閉じたらリセット（追加）
+  useEffect(() => {
+    if (!open) {
+      setShowAdminLink(false);
+      tapCountRef.current = 0;
+      lastTapAtRef.current = 0;
+    }
+  }, [open]);
+
+  // ★ シート内3タップ検出（追加）
+  const handleSecretTap = (e: React.PointerEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest(IGNORE_SELECTOR)) return;
+
+    const now = Date.now();
+    const last = lastTapAtRef.current;
+
+    if (now - last > TRIPLE_TAP_INTERVAL_MS) {
+      tapCountRef.current = 1;
+      lastTapAtRef.current = now;
+      return;
+    }
+
+    tapCountRef.current += 1;
+    lastTapAtRef.current = now;
+
+    if (tapCountRef.current >= 3) {
+      setShowAdminLink(true);
+      tapCountRef.current = 0;
+      lastTapAtRef.current = 0;
+    }
+  };
 
   return (
     <header
@@ -122,91 +164,96 @@ export default function Header({ className = "" }: { className?: string }) {
               gradient
             )}
           >
-            <SheetHeader className="pt-4 px-4">
-              <SheetTitle
-                className={clsx(
-                  "text-center text-xl",
-                  isDark ? "text-white" : "text-black"
-                )}
-              >
-                メニュー
-              </SheetTitle>
-            </SheetHeader>
-
-            <div className="flex-1 flex flex-col justify-center items-center space-y-4 text-center">
-              {[
-                { href: "/company", label: "会社概要" },
-                { href: "/products", label: "施工実績" },
-                { href: "/staffs", label: "スタッフ" },
-                { href: "/menu", label: "料金" },
-                { href: "/stores", label: "対応エリア" },
-                { href: "/about", label: "当店の思い" },
-                { href: "/blog", label: "ブログ" },
-                { href: "/apply", label: "お問い合わせ" },
-                // { href: "/news", label: "お知らせ" },
-                // { href: "mailto:tsreform.yukisaito@gmail.com", label: "ご連絡はこちら" },
-                { href: "/jobApp", label: "協力業者募集" },
-              ].map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
+            {/* ★ ラッパーを追加して3タップ検出 */}
+            <div className="flex flex-col h-full" onPointerDown={handleSecretTap}>
+              <SheetHeader className="pt-4 px-4">
+                <SheetTitle
                   className={clsx(
-                    "text-lg",
+                    "text-center text-xl",
                     isDark ? "text-white" : "text-black"
                   )}
                 >
-                  {label}
-                </Link>
-              ))}
-            </div>
+                  メニュー
+                </SheetTitle>
+              </SheetHeader>
 
-            <div className="p-4 space-y-4">
-              {isLoggedIn && (
-                <>
+              <div className="flex-1 flex flex-col justify-center items-center space-y-4 text-center">
+                {[
+                  { href: "/company", label: "会社概要" },
+                  { href: "/products", label: "施工実績" },
+                  { href: "/staffs", label: "スタッフ" },
+                  { href: "/menu", label: "料金" },
+                  { href: "/stores", label: "対応エリア" },
+                  { href: "/about", label: "当店の思い" },
+                  { href: "/blog", label: "ブログ" },
+                  { href: "/apply", label: "お問い合わせ" },
+                  // { href: "/news", label: "お知らせ" },
+                  // { href: "mailto:tsreform.yukisaito@gmail.com", label: "ご連絡はこちら" },
+                  { href: "/jobApp", label: "協力業者募集" },
+                ].map(({ href, label }) => (
                   <Link
-                    href="/postList"
+                    key={href}
+                    href={href}
                     onClick={() => setOpen(false)}
                     className={clsx(
-                      "block text-center text-lg",
+                      "text-lg",
                       isDark ? "text-white" : "text-black"
                     )}
                   >
-                    タイムライン
+                    {label}
                   </Link>
-                  <Link
-                    href="/community"
-                    onClick={() => setOpen(false)}
-                    className={clsx(
-                      "block text-center text-lg",
-                      isDark ? "text-white" : "text-black"
-                    )}
-                  >
-                    コミュニティ
-                  </Link>
-                  <Link
-                    href="/analytics"
-                    onClick={() => setOpen(false)}
-                    className={clsx(
-                      "block text-center text-lg",
-                      isDark ? "text-white" : "text-black"
-                    )}
-                  >
-                    分析
-                  </Link>
-                </>
-              )}
+                ))}
+              </div>
 
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className={clsx(
-                  "block text-center text-lg",
-                  isDark ? "text-white" : "text-black"
+              <div className="p-4 space-y-4">
+                {isLoggedIn && (
+                  <>
+                    <Link
+                      href="/postList"
+                      onClick={() => setOpen(false)}
+                      className={clsx(
+                        "block text-center text-lg",
+                        isDark ? "text-white" : "text-black"
+                      )}
+                    >
+                      タイムライン
+                    </Link>
+                    <Link
+                      href="/community"
+                      onClick={() => setOpen(false)}
+                      className={clsx(
+                        "block text-center text-lg",
+                        isDark ? "text-white" : "text-black"
+                      )}
+                    >
+                      コミュニティ
+                    </Link>
+                    <Link
+                      href="/analytics"
+                      onClick={() => setOpen(false)}
+                      className={clsx(
+                        "block text-center text-lg",
+                        isDark ? "text-white" : "text-black"
+                      )}
+                    >
+                      分析
+                    </Link>
+                  </>
                 )}
-              >
-                Administrator Login
-              </Link>
+
+                {(showAdminLink || isLoggedIn) && (
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className={clsx(
+                      "block text-center text-lg",
+                      isDark ? "text-white" : "text-black"
+                    )}
+                  >
+                    管理者ログイン
+                  </Link>
+                )}
+              </div>
             </div>
           </SheetContent>
         </Sheet>
