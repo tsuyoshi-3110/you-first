@@ -56,7 +56,10 @@ const schema = z.object({
     .string()
     .min(8, "電話番号を入力してください")
     .regex(/^[0-9+\-() ]+$/, "半角数字・記号で入力してください"),
-  email: z.string().min(1, "メールアドレスを入力してください").email("メールアドレスの形式が不正です"),
+  email: z
+    .string()
+    .min(1, "メールアドレスを入力してください")
+    .email("メールアドレスの形式が不正です"),
   contactMethod: z.enum(["phone", "email", "line"]), // 既定値あり
   date: z
     .string()
@@ -64,7 +67,10 @@ const schema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付形式が不正です"),
   time: z.string().min(1, "ご希望時間を選択してください"),
   address: z.string().min(1, "ご住所を入力してください"),
-  notes: z.string().min(1, "ご要望・相談内容を入力してください").max(1000, "ご要望が長すぎます"),
+  notes: z
+    .string()
+    .min(1, "ご要望・相談内容を入力してください")
+    .max(1000, "ご要望が長すぎます"),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -90,7 +96,9 @@ export default function JobApplyForm() {
   const isDark =
     gradient &&
     DARK_KEYS.includes(
-      Object.keys(THEMES).find((k) => THEMES[k as ThemeKey] === gradient) as ThemeKey
+      Object.keys(THEMES).find(
+        (k) => THEMES[k as ThemeKey] === gradient
+      ) as ThemeKey
     );
   const textClass = isDark ? "text-white" : "text-black";
 
@@ -135,7 +143,8 @@ export default function JobApplyForm() {
           message: [
             `【ご依頼フォーム】`,
             `■ 連絡方法: ${
-              CONTACT_METHODS.find((c) => c.key === v.contactMethod)?.label ?? v.contactMethod
+              CONTACT_METHODS.find((c) => c.key === v.contactMethod)?.label ??
+              v.contactMethod
             }`,
             `■ 希望日時: ${v.date} ${v.time}`,
             `■ ご住所: ${v.address}`,
@@ -200,7 +209,9 @@ export default function JobApplyForm() {
               required
               aria-required
             />
-            {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+            {errors.name && (
+              <p className="text-xs text-red-600">{errors.name.message}</p>
+            )}
           </div>
 
           {/* 電話番号 */}
@@ -214,12 +225,16 @@ export default function JobApplyForm() {
               aria-required
               inputMode="tel"
             />
-            {errors.phone && <p className="text-xs text-red-600">{errors.phone.message}</p>}
+            {errors.phone && (
+              <p className="text-xs text-red-600">{errors.phone.message}</p>
+            )}
           </div>
 
           {/* メールアドレス */}
           <div className="grid gap-2">
-            <label className="text-sm font-medium text-black">メールアドレス</label>
+            <label className="text-sm font-medium text-black">
+              メールアドレス
+            </label>
             <Input
               type="email"
               placeholder="example@example.com"
@@ -229,29 +244,37 @@ export default function JobApplyForm() {
               aria-required
               inputMode="email"
             />
-            {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="text-xs text-red-600">{errors.email.message}</p>
+            )}
           </div>
 
           {/* 希望日・希望時間 */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
+          <div className="grid gap-4 sm:grid-cols-2 min-w-0">
+            {/* ご希望日 */}
+            <div className="grid gap-2 min-w-0">
               <label className="text-sm font-medium text-black">ご希望日</label>
               <Input
                 type="date"
                 min={minDate}
                 {...register("date")}
-                className="text-black"
+                className="block min-w-0 w-full max-w-full appearance-none text-black"
                 required
                 aria-required
               />
-              {errors.date && <p className="text-xs text-red-600">{errors.date.message}</p>}
+              {errors.date && (
+                <p className="text-xs text-red-600">{errors.date.message}</p>
+              )}
             </div>
 
-            <div className="grid gap-2">
-              <label className="text-sm font-medium text-black">ご希望時間</label>
+            {/* ご希望時間 */}
+            <div className="grid gap-2 min-w-0">
+              <label className="text-sm font-medium text-black">
+                ご希望時間
+              </label>
               <select
                 {...register("time")}
-                className="h-10 w-full rounded-md border bg-white px-3 text-black"
+                className="block h-10 min-w-0 w-full max-w-full rounded-md border bg-white px-3 text-black"
                 required
                 aria-required
               >
@@ -262,7 +285,9 @@ export default function JobApplyForm() {
                   </option>
                 ))}
               </select>
-              {errors.time && <p className="text-xs text-red-600">{errors.time.message}</p>}
+              {errors.time && (
+                <p className="text-xs text-red-600">{errors.time.message}</p>
+              )}
             </div>
           </div>
 
@@ -276,12 +301,16 @@ export default function JobApplyForm() {
               required
               aria-required
             />
-            {errors.address && <p className="text-xs text-red-600">{errors.address.message}</p>}
+            {errors.address && (
+              <p className="text-xs text-red-600">{errors.address.message}</p>
+            )}
           </div>
 
           {/* ご要望（必須化） */}
           <div className="grid gap-2">
-            <label className="text-sm font-medium text-black">ご要望・相談内容</label>
+            <label className="text-sm font-medium text-black">
+              ご要望・相談内容
+            </label>
             <Textarea
               rows={6}
               placeholder="サービス内容をご記入ください"
@@ -290,12 +319,16 @@ export default function JobApplyForm() {
               required
               aria-required
             />
-            {errors.notes && <p className="text-xs text-red-600">{errors.notes.message}</p>}
+            {errors.notes && (
+              <p className="text-xs text-red-600">{errors.notes.message}</p>
+            )}
           </div>
 
           {/* 送信エラー */}
           {errorMsg && (
-            <div className="rounded-md bg-red-50 p-2 text-sm text-red-700">{errorMsg}</div>
+            <div className="rounded-md bg-red-50 p-2 text-sm text-red-700">
+              {errorMsg}
+            </div>
           )}
 
           {/* 送信ボタン */}
@@ -311,7 +344,9 @@ export default function JobApplyForm() {
       {doneModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50">
           <div className="w-[92%] max-w-md rounded-2xl bg-white p-6 shadow-xl text-black">
-            <div className="text-base font-semibold mb-2">送信が完了しました</div>
+            <div className="text-base font-semibold mb-2">
+              送信が完了しました
+            </div>
             <p className="text-sm mb-4">
               {doneModal.name} 様、ありがとうございます。
               <br />
