@@ -1,9 +1,8 @@
 // app/api/job/apply/route.ts
+import { adminDb } from "@/lib/firebase-admin";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
 import { SITE_KEY } from "@/lib/atoms/siteKeyAtom";
 
 // ✅ Node ランタイム（Edge では nodemailer が動きません）
@@ -47,9 +46,8 @@ async function resolveOwnerEmail(): Promise<string | null> {
 
   // 1) siteSettings
   try {
-    const ref1 = doc(db, "siteSettings", SITE_KEY);
-    const snap1 = await getDoc(ref1);
-    if (snap1.exists()) {
+    const snap1 = await adminDb.doc(`siteSettings/${SITE_KEY}`).get();
+    if (snap1.exists) {
       const email = snap1.data()?.ownerEmail as string | undefined;
       if (email && isEmail(email)) return email;
     }
@@ -57,9 +55,8 @@ async function resolveOwnerEmail(): Promise<string | null> {
 
   // 2) siteSettingsEditable
   try {
-    const ref2 = doc(db, "siteSettingsEditable", SITE_KEY);
-    const snap2 = await getDoc(ref2);
-    if (snap2.exists()) {
+    const snap2 = await adminDb.doc(`siteSettingsEditable/${SITE_KEY}`).get();
+    if (snap2.exists) {
       const email = snap2.data()?.ownerEmail as string | undefined;
       if (email && isEmail(email)) return email;
     }
